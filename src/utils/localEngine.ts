@@ -143,7 +143,9 @@ export function generateLocalResponse(
     } else if (trimmedMsg.includes('xasil') || trimmedMsg.includes('proje') || trimmedMsg.includes('yapay zeka') || trimmedMsg.includes('kurucu')) {
       replyText = hasSlang ? `XASİL harika gidiyor dostum! Türkiye'nin yerli zeka platformunu geliştiriyoruz. Sorunu alayım!` : `XASİL, Türkiye'nin yerli yapay zeka platformudur. Bu konuda merak ettiğiniz bir şey var mı?`;
     } else {
-      replyText = hasSlang ? `Anladım dostum. "${userMessage}" konusu hakkında ne düşünüyorsun?` : `Anladım. "${userMessage}" hakkında ne düşünüyorsunuz?`;
+      replyText = hasSlang
+        ? `Çok haklısın dostum! XASİL projeleri ve teknoloji tarafında tam da bu dinamizm üzerine odaklanıyoruz. Başka hangi fikirler var aklında?`
+        : `Kesinlikle çok doğru bir tespit. XASİL platformunda da tam olarak bu yenilikçi çözümlere odaklanıyoruz. Detaylandırmak istediğiniz bir nokta var mı?`;
     }
 
     return {
@@ -245,7 +247,7 @@ export function generateLocalResponse(
     } else if (lowerMsg.includes('kimsin') || lowerMsg.includes('tanıt') || lowerMsg.includes('ne iş yaparsın')) {
       replyText = `Ben ${agent.name}! ${agent.title}. ${agent.bio}`;
     } else {
-      replyText = `Harika bir mesaj! "${userMessage}" hakkında düşünmen çok anlamlı. ${agent.name} olarak seninle sohbet etmek bana büyük keyif veriyor. Bu konuda ne düşünüyorsun? ✨`;
+      replyText = `Çok güzel bir nokta! ${agent.name} olarak seninle sohbet etmek bana büyük keyif veriyor. Bu konuda sana nasıl destek olabilirim? ✨`;
     }
   }
 
