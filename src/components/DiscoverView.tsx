@@ -152,7 +152,12 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                   alt={agent.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80';
+                    const fallback = agent.id.includes('hakan')
+                      ? '/hakan_xasil_avatar.svg'
+                      : agent.gender === 'Erkek'
+                      ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80'
+                      : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80';
+                    (e.target as HTMLImageElement).src = fallback;
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-black/40" />

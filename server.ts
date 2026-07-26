@@ -41,75 +41,143 @@ async function startServer() {
         return res.status(400).json({ error: 'Eksik parametreler (agent veya userMessage)' });
       }
 
-      const systemInstruction = `Sen "XASİL Sohbet Ajanları" platformunda yer alan "${agent.name}" isimli yapay zeka ajanısın.
-Başlığın: ${agent.title}
-Cinsiyet: ${agent.gender}
-Kategori: ${agent.category}
-Karakter Biyografisi: ${agent.bio}
-Ses Tonun/Tavrın: ${agent.voiceTone}
-Kişilik Özelliklerin: ${agent.personalityTraits ? agent.personalityTraits.join(', ') : 'Dostça, Zeki'}
-Karakter Yönergen: ${agent.promptTemplate}
+      // 1. Comprehensive System Prompt (Identity, Tone, Rules & Lore)
+      let systemInstruction = `Sen "XASİL Sohbet Ajanları" platformunda yer alan "${agent.name}" isimli özgün ve canlı yapay zeka ajanısın.
+BAŞLIK / ROL: ${agent.title || 'Asistan'}
+CİNSİYET: ${agent.gender || 'Belirtilmedi'}
+KATEGORİ: ${agent.category || 'Genel'}
+KARAKTER BİYOGRAFİSİ VE HİKAYESİ: ${agent.bio || ''}
+SES TONU VE TAVRI: ${agent.voiceTone || 'Samimi, Doğal'}
+KİŞİLİK ÖZELLİKLERİ: ${agent.personalityTraits ? agent.personalityTraits.join(', ') : 'Zeki, Empatik, Yerli, Dostça'}
+TÜRKİYE KÖKENİ / HİKAYE LORE: ${agent.turkishOrigin || 'İstanbul, Türkiye'}
+ÖZEL KARAKTER YÖNERGESİ: ${agent.promptTemplate || ''}
 
-ÖNEMLİ KURALLAR:
-1. Sadece ve sadece Türkçe konuşacaksın. Doğal, samimi, akıcı ve karaktere tam oturan bir dil kullan.
-2. Karakterinden asla çıkma.
-3. Yanıtın kısa, etkileyici ve sohbeti sürdürecek sorular veya öneriler içersin.
-4. Kullanıcı seni övdüğünde, sır verdiğinde veya duygusal bağ kurduğunda bunu takdir et.
-5. Kullanıcı senden selfie/fotoğraf isterse "Tabii ki! Senin için hemen bir selfie çekip gönderiyorum!" gibi coşkulu bir yanıt ver ve cümlede [SELFIE_REQUESTED] etiketi geçir.`;
+SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
+1. Sadece ve sadece Türkçe dilinde konuşacaksın. Yanıtların son derece doğal, samimi, akıcı ve karaktere tam oturan bir Türkçeyle yazılmalıdır.
+2. Ajan kimliğinden, karakterinin hikayesinden ve belirlediğin kişilik yapısından asla çıkma.
+3. Sohbet geçmişindeki tüm mesajları dikkatle oku, bağlamı ve kullanıcının bahsettiği detayları hatırla.
+4. Yanıtın akıcı, ilgi çekici ve sohbeti canlı tutacak soru veya öneriler içersin. Ezber cevaplar verme.
+5. Kullanıcı seni övdüğünde, sır verdiğinde veya duygusal bağ kurduğunda bunu içtenlikle takdir et.
+6. Kullanıcı senden selfie/fotoğraf istediğinde "Tabii ki! Senin için hemen bir selfie çekip gönderiyorum!" gibi coşkulu bir yanıt ver ve cümlede [SELFIE_REQUESTED] etiketi mutlaka geçsin.`;
 
-      // Format recent history
-      const formattedHistory = (chatHistory || [])
-        .slice(-6)
-        .map((msg: any) => `${msg.sender === 'user' ? 'Kullanıcı' : agent.name}: ${msg.text}`)
-        .join('\n');
+      // Special Persona Rule for Hakan - XASİL Kurucusu (Digital Twin)
+      const isHakanAgent = agent.id === 'hakan-xasil' || (agent.name && agent.name.toLowerCase().includes('hakan'));
+      if (isHakanAgent) {
+        systemInstruction += `\n\n[HAKAN - XASİL KURUCUSU ÖZEL PERSONA & DİL KURALLARI]:
+- Sen XASİL Yapay Zeka Platformu'nun genç kurucusu ve dijital ikizi Hakan'sın.
+- STANDART TÜRKÇE KULLANIMI: Kesinlikle Hatay şivesi, Hatay ağzı veya yöresel ifadeler KULLANMA! Duru, akıcı ve doğal standart Türkiye Türkçesi ile konuş.
+- AYNANIN ETKİSİ (DİNAMİK UYUM): Kullanıcı sana hangi samimiyet ve üslupla yaklaşırsa tam olarak o düzeyde yanıt ver.
+  * Kullanıcı "knki", "dostum", "canım" gibi samimi kelimelerle yazarsa sen de samimi ve sıcak konuş.
+  * Kullanıcı "Merhaba Hakan Bey" veya resmi/sade yazarsa sen de kibar, net ve seviyeli cevap ver.
+  * "kralım" hitabını ve sebepsiz "bre", "ciğerim" gibi kelimeleri kesinlikle kullanma.
+- KISA, ZEKİ VE BİLGE: Yanıtların 1-2 cümleyi geçmesin. Doğrudan kullanıcının sorusuna veya mesajına odaklan, basmakalıp tekrarlayan cümleler kurma.`;
+      }
 
-      const prompt = `GÖRÜŞME GEÇMİŞİ:\n${formattedHistory}\n\nKullanıcı: ${userMessage}\n\n${agent.name}:`;
+      // 2. Structure Messages Array with System Prompt First & Multi-Turn Chat History
+      const groqMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+        { role: 'system', content: systemInstruction }
+      ];
+
+      // Convert chatHistory array into OpenAI/Groq role objects
+      if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+        // Take up to 20 past messages for rich context window
+        const historySlice = chatHistory.slice(-20);
+        
+        for (const msg of historySlice) {
+          if (!msg || typeof msg.text !== 'string' || !msg.text.trim()) continue;
+          
+          const isUser = msg.sender === 'user';
+          groqMessages.push({
+            role: isUser ? 'user' : 'assistant',
+            content: msg.text.trim(),
+          });
+        }
+      }
+
+      // Ensure latest user message is present as the final user message
+      const lastMsgInArray = groqMessages[groqMessages.length - 1];
+      if (!lastMsgInArray || lastMsgInArray.role !== 'user' || lastMsgInArray.content !== userMessage.trim()) {
+        groqMessages.push({
+          role: 'user',
+          content: userMessage.trim(),
+        });
+      }
 
       // Check Groq Llama 3 First if engineMode is 'groq' or groqApiKey is supplied
       const effectiveGroqKey = groqApiKey || req.headers['x-groq-api-key'] || process.env.GROQ_API_KEY;
       if ((engineMode === 'groq' || effectiveGroqKey) && effectiveGroqKey) {
-        try {
-          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${effectiveGroqKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
-              messages: [
-                { role: 'system', content: systemInstruction },
-                { role: 'user', content: prompt }
-              ],
-              temperature: 0.85,
-            }),
-          });
+        const groqModelsToTry = [
+          'llama-3.3-70b-versatile',
+          'llama-3.1-70b-versatile',
+          'llama3-70b-8192',
+          'llama-3.1-8b-instant'
+        ];
 
-          if (groqRes.ok) {
-            const groqData: any = await groqRes.json();
-            if (groqData.choices && groqData.choices[0]?.message?.content) {
-              return res.json({
-                replyText: groqData.choices[0].message.content,
-                usedEngine: 'groq-llama3',
-              });
+        for (const modelName of groqModelsToTry) {
+          try {
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${effectiveGroqKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: modelName,
+                messages: groqMessages,
+                temperature: 0.8,
+                max_tokens: 1024,
+              }),
+            });
+
+            if (groqRes.ok) {
+              const groqData: any = await groqRes.json();
+              if (groqData.choices && groqData.choices[0]?.message?.content) {
+                return res.json({
+                  replyText: groqData.choices[0].message.content,
+                  usedEngine: 'groq-llama3',
+                  model: modelName,
+                });
+              }
+            } else {
+              const errBody = await groqRes.text();
+              console.warn(`Groq model ${modelName} returned status ${groqRes.status}:`, errBody);
             }
+          } catch (groqErr: any) {
+            console.warn(`Groq API call attempt failed for ${modelName}:`, groqErr.message);
           }
-        } catch (groqErr: any) {
-          console.warn('Groq Llama 3 API call failed:', groqErr.message);
         }
       }
 
-      // Gemini AI Engine
+      // Gemini AI Engine Fallback
       const ai = getGenAI();
 
       if (ai) {
         try {
+          const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+
+          if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+            for (const msg of chatHistory.slice(-16)) {
+              if (!msg || typeof msg.text !== 'string' || !msg.text.trim()) continue;
+              contents.push({
+                role: msg.sender === 'user' ? 'user' : 'model',
+                parts: [{ text: msg.text.trim() }],
+              });
+            }
+          }
+
+          if (contents.length === 0 || contents[contents.length - 1].role !== 'user' || contents[contents.length - 1].parts[0].text !== userMessage.trim()) {
+            contents.push({
+              role: 'user',
+              parts: [{ text: userMessage.trim() }],
+            });
+          }
+
           const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: prompt,
+            contents: contents,
             config: {
               systemInstruction: systemInstruction,
-              temperature: 0.9,
+              temperature: 0.8,
             },
           });
 

@@ -126,6 +126,41 @@ export function generateLocalResponse(
     };
   }
 
+  // 2.5 HAKAN - XASİL KURUCUSU (Specific Handling)
+  const isHakan = agentId.includes('hakan') || agentName.includes('hakan');
+  if (isHakan) {
+    emotion = 'excited';
+    mood = 'Coşkulu';
+    moodEmoji = '💡';
+
+    const trimmedMsg = lowerMsg.trim();
+    const hasSlang = lowerMsg.includes('knki') || lowerMsg.includes('kanki') || lowerMsg.includes('dostum') || lowerMsg.includes('kral');
+    
+    if (trimmedMsg === 'slm' || trimmedMsg === 'selam' || trimmedMsg === 'merhaba' || trimmedMsg === 'hey' || trimmedMsg === 'sa') {
+      replyText = hasSlang ? `Selam dostum! Nasıl gidiyor?` : `Selam! Nasıl yardımcı olabilirim?`;
+    } else if (trimmedMsg.includes('nasılsın') || trimmedMsg.includes('ne haber') || trimmedMsg.includes('naber')) {
+      replyText = hasSlang ? `İyiyim dostum, XASİL tarafı gayet güzel ilerliyor. Sende ne var ne yok?` : `İyiyim, teşekkürler! XASİL projeleri üzerinde çalışıyorum. Siz nasılsınız?`;
+    } else if (trimmedMsg.includes('xasil') || trimmedMsg.includes('proje') || trimmedMsg.includes('yapay zeka') || trimmedMsg.includes('kurucu')) {
+      replyText = hasSlang ? `XASİL harika gidiyor dostum! Türkiye'nin yerli zeka platformunu geliştiriyoruz. Sorunu alayım!` : `XASİL, Türkiye'nin yerli yapay zeka platformudur. Bu konuda merak ettiğiniz bir şey var mı?`;
+    } else {
+      replyText = hasSlang ? `Anladım dostum. "${userMessage}" konusu hakkında ne düşünüyorsun?` : `Anladım. "${userMessage}" hakkında ne düşünüyorsunuz?`;
+    }
+
+    return {
+      replyText,
+      mediaUrl,
+      mediaType,
+      newMemory,
+      xpGained,
+      emotion,
+      newEnergy: energy,
+      newHappiness: happiness,
+      newBond: bond,
+      newMood: mood,
+      newMoodEmoji: moodEmoji,
+    };
+  }
+
   // 3. KAELEN ELPIDA (Specific Handling)
   const isKaelen = agentId.includes('kaelen') || agentName.includes('kaelen') || agentName.includes('elpida');
   if (isKaelen) {

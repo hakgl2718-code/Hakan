@@ -520,10 +520,11 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({
     setShowAddModal(false);
   };
 
+  const [, setRefresh] = useState(0);
+
   const handleDeleteMemory = (id: string) => {
-    if (confirm('Bu anıyı silmek istediğinize emin misiniz?')) {
-      deleteMemory(selectedAgent.id, id);
-    }
+    deleteMemory(selectedAgent.id, id);
+    setRefresh((prev) => prev + 1);
   };
 
   const filteredMemories = memories.filter((m) => {

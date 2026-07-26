@@ -22,15 +22,34 @@ export function getAgents(): Agent[] {
       return INITIAL_AGENTS;
     }
     const parsed: Agent[] = JSON.parse(data);
-    // Ensure initial agents exist if new ones were added
-    const ids = new Set(parsed.map((a) => a.id));
-    const missing = INITIAL_AGENTS.filter((a) => !ids.has(a.id));
-    if (missing.length > 0) {
-      const merged = [...parsed, ...missing];
-      localStorage.setItem(AGENTS_KEY, JSON.stringify(merged));
-      return merged;
-    }
-    return parsed;
+
+    // Sync initial agents with latest static code definitions (avatar, bio, greeting, promptTemplate, etc.)
+    const updated = INITIAL_AGENTS.map((initAgent) => {
+      const existing = parsed.find((a) => a.id === initAgent.id);
+      if (existing) {
+        return {
+          ...existing,
+          name: initAgent.name,
+          title: initAgent.title,
+          avatar: initAgent.avatar,
+          bio: initAgent.bio,
+          greeting: initAgent.greeting,
+          personalityTraits: initAgent.personalityTraits,
+          voiceTone: initAgent.voiceTone,
+          promptTemplate: initAgent.promptTemplate,
+          turkishOrigin: initAgent.turkishOrigin,
+        };
+      }
+      return initAgent;
+    });
+
+    // Keep user-created custom agents
+    const initialIds = new Set(INITIAL_AGENTS.map((a) => a.id));
+    const userCreated = parsed.filter((a) => !initialIds.has(a.id));
+
+    const finalAgents = [...updated, ...userCreated];
+    localStorage.setItem(AGENTS_KEY, JSON.stringify(finalAgents));
+    return finalAgents;
   } catch (e) {
     console.error('Error loading agents:', e);
     return INITIAL_AGENTS;

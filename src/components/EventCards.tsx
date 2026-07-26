@@ -191,7 +191,10 @@ export const EventCards: React.FC<EventCardsProps> = ({
                       alt={event.agentName}
                       className="w-6 h-6 rounded-md object-cover border border-amber-400 shrink-0"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80';
+                        const fallback = event.agentName.toLowerCase().includes('hakan')
+                          ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600&auto=format&fit=crop&q=80'
+                          : 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&auto=format&fit=crop&q=80';
+                        (e.target as HTMLImageElement).src = fallback;
                       }}
                     />
                     <span className="text-[11px] font-bold text-white truncate">{event.agentName}</span>

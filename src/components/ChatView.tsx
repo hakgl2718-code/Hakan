@@ -19,7 +19,9 @@ import {
   Gift,
   Smile,
   Mic,
-  Music
+  Music,
+  RotateCcw,
+  PlusCircle,
 } from 'lucide-react';
 import { generateLocalResponse } from '../utils/localEngine';
 import { saveChatMessage, getChatMessages, addMemory, clearChatHistory, saveAgent, getMemories } from '../utils/storage';
@@ -49,6 +51,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null);
   const [showSoundBank, setShowSoundBank] = useState(false);
   const [lastPlayedClip, setLastPlayedClip] = useState<string | null>(null);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load chat history on agent change
@@ -253,10 +257,27 @@ export const ChatView: React.FC<ChatViewProps> = ({
   };
 
   const handleClearChat = () => {
-    if (confirm('Tüm sohbet geçmişini silmek istediğinize emin misiniz?')) {
-      clearChatHistory(agent.id);
-      setMessages([]);
-    }
+    setShowClearModal(true);
+  };
+
+  const confirmClearChat = () => {
+    clearChatHistory(agent.id);
+
+    const greetingMsg: ChatMessage = {
+      id: `greeting-${Date.now()}`,
+      agentId: agent.id,
+      sender: 'agent',
+      text: agent.greeting,
+      timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+    };
+    saveChatMessage(agent.id, greetingMsg);
+    setMessages([greetingMsg]);
+    setShowClearModal(false);
+
+    setToastMessage('Sohbet geçmişi tamamen silindi ve yeni sohbet başlatıldı! ✨');
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
   };
 
   return (
@@ -273,7 +294,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </button>
 
           <div className="relative w-12 h-12 rounded-2xl overflow-hidden border-2 bg-slate-900 shrink-0" style={{ borderColor: accentHex }}>
-            <img src={agent.avatar} alt={agent.name} className="w-full h-full object-cover" />
+            <img
+              src={agent.avatar}
+              alt={agent.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const fallback = agent.id.includes('hakan')
+                  ? '/hakan_xasil_avatar.svg'
+                  : agent.gender === 'Erkek'
+                  ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80'
+                  : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80';
+                (e.target as HTMLImageElement).src = fallback;
+              }}
+            />
             <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-400 border-2 border-[#111111] rounded-full" />
           </div>
 
@@ -349,11 +382,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </button>
 
           <button
-            onClick={handleClearChat}
-            className="p-2 rounded-xl bg-white/5 hover:bg-rose-950 hover:text-rose-400 text-gray-400 border border-white/10 transition-all cursor-pointer"
-            title="Sohbeti Sil"
+            onClick={() => setShowClearModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 hover:scale-105"
+            title="Sohbeti Sıfırla ve Yeni Sohbet Başlat"
           >
-            <Trash2 className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Yeni Sohbet</span>
+          </button>
+
+          <button
+            onClick={() => setShowClearModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 hover:scale-105"
+            title="Tüm Sohbet Geçmişini Sil"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden sm:inline">Sohbeti Sil</span>
           </button>
         </div>
       </div>
@@ -450,6 +493,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 src={agent.avatar}
                 alt={agent.name}
                 className="w-8 h-8 rounded-xl object-cover border border-white/10 shrink-0 mt-1"
+                onError={(e) => {
+                  const fallback = agent.id.includes('hakan')
+                    ? '/hakan_xasil_avatar.svg'
+                    : agent.gender === 'Erkek'
+                    ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80'
+                    : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80';
+                  (e.target as HTMLImageElement).src = fallback;
+                }}
               />
             )}
 
@@ -508,7 +559,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
         {/* Typing indicator */}
         {isTyping && (
           <div className="flex items-center gap-2 text-xs font-semibold p-2" style={{ color: accentHex }}>
-            <img src={agent.avatar} alt="Agent" className="w-6 h-6 rounded-lg object-cover" />
+            <img
+              src={agent.avatar}
+              alt="Agent"
+              className="w-6 h-6 rounded-lg object-cover"
+              onError={(e) => {
+                const fallback = agent.id.includes('hakan')
+                  ? '/hakan_xasil_avatar.svg'
+                  : agent.gender === 'Erkek'
+                  ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80'
+                  : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80';
+                (e.target as HTMLImageElement).src = fallback;
+              }}
+            />
             <div className="flex items-center gap-1 bg-[#121212] px-3 py-2 rounded-xl border border-white/10">
               <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: accentHex }} />
               <span className="w-2 h-2 rounded-full animate-bounce delay-100" style={{ backgroundColor: accentHex }} />
@@ -569,6 +632,46 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <span className="hidden sm:inline">Gönder</span>
         </button>
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-emerald-950/95 text-emerald-200 border border-emerald-500/50 px-5 py-2.5 rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce">
+          <Sparkles className="w-4 h-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Clear Chat Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#14121a] border border-rose-500/30 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative animate-fadeIn text-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-2">
+              Sohbeti Sil & Sıfırla
+            </h3>
+            <p className="text-xs text-gray-300 mb-6 leading-relaxed">
+              <strong className="text-amber-300">{agent.name}</strong> ile olan tüm mesaj geçmişiniz tamamen silinecek ve taze bir yeni sohbet başlatılacak. Emin misiniz?
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-gray-300 text-xs font-bold transition-all cursor-pointer"
+              >
+                İptal
+              </button>
+              <button
+                onClick={confirmClearChat}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-extrabold shadow-lg shadow-rose-900/40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Evet, Sil</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Modal Preview */}
       {previewMediaUrl && (

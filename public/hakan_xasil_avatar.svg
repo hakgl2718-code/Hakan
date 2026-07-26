@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="60%" fx="50%" fy="45%">
+      <stop offset="0%" stop-color="#0e2338" />
+      <stop offset="60%" stop-color="#080d16" />
+      <stop offset="100%" stop-color="#030509" />
+    </radialGradient>
+
+    <!-- Cyan Neon Glow Filter -->
+    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Intense Red Glow for Crescent -->
+    <filter id="redGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- X Logo Gradient -->
+    <linearGradient id="xGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.85" />
+      <stop offset="50%" stop-color="#4facfe" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#00c6ff" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Ring Cyan Gradient -->
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="50%" stop-color="#00a8ff" />
+      <stop offset="100%" stop-color="#0052d4" />
+    </linearGradient>
+
+    <!-- Face Skin Gradient -->
+    <linearGradient id="skinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e2aa88" />
+      <stop offset="50%" stop-color="#cc8f6e" />
+      <stop offset="100%" stop-color="#a8694a" />
+    </linearGradient>
+
+    <!-- Hair Gradient -->
+    <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a2321" />
+      <stop offset="100%" stop-color="#120e0d" />
+    </linearGradient>
+
+    <!-- Shirt Gradient -->
+    <linearGradient id="shirtGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e2630" />
+      <stop offset="100%" stop-color="#0f1318" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Background Canvas -->
+  <rect width="600" height="600" fill="url(#bgGlow)" />
+
+  <!-- 2. Circuit Board Lines (Tech Grid) -->
+  <g stroke="#00f2fe" stroke-width="1.2" opacity="0.25" fill="none">
+    <path d="M 50 180 H 140 L 180 220 V 380 L 130 430 H 40" />
+    <path d="M 550 180 H 460 L 420 220 V 380 L 470 430 H 560" />
+    <path d="M 220 50 V 120 L 250 150" />
+    <path d="M 380 50 V 120 L 350 150" />
+    <path d="M 100 300 H 180" />
+    <path d="M 500 300 H 420" />
+    <!-- Node Dots -->
+    <circle cx="140" cy="180" r="3" fill="#00f2fe" />
+    <circle cx="460" cy="180" r="3" fill="#00f2fe" />
+    <circle cx="180" cy="220" r="3" fill="#00f2fe" />
+    <circle cx="420" cy="220" r="3" fill="#00f2fe" />
+    <circle cx="250" cy="150" r="3" fill="#00f2fe" />
+    <circle cx="350" cy="150" r="3" fill="#00f2fe" />
+  </g>
+
+  <!-- 3. Giant Futuristic Holographic 'X' Emblem -->
+  <g filter="url(#cyanGlow)">
+    <!-- X Left Arm -->
+    <path d="M 150 110 L 250 110 L 450 430 L 350 430 Z" fill="url(#xGrad)" />
+    <!-- X Right Arm -->
+    <path d="M 450 110 L 350 110 L 150 430 L 250 430 Z" fill="url(#xGrad)" />
+  </g>
+
+  <!-- 4. Concentric Tech Circles & Hologram Rings -->
+  <!-- Outer Dash Ring -->
+  <circle cx="300" cy="270" r="230" fill="none" stroke="url(#ringGrad)" stroke-width="2" stroke-dasharray="8 6" opacity="0.6" />
+  <!-- Main Glowing Ring -->
+  <circle cx="300" cy="270" r="215" fill="none" stroke="#00f2fe" stroke-width="4" filter="url(#cyanGlow)" />
+  <!-- Inner Segment Ring -->
+  <circle cx="300" cy="270" r="195" fill="none" stroke="#00a8ff" stroke-width="1.5" stroke-dasharray="120 20 60 20" opacity="0.8" />
+
+  <!-- 5. Turkish Flag Crescent & Star Icon (Neon Red Glow on Right Ring) -->
+  <g transform="translate(425, 230) scale(0.75)" filter="url(#redGlow)">
+    <!-- Crescent Moon -->
+    <path d="M 20 0 A 18 18 0 1 0 20 36 A 14 14 0 1 1 20 0 Z" fill="#ff2e63" />
+    <!-- Star -->
+    <path d="M 32 18 L 35 22 L 40 22 L 36 25 L 38 30 L 33 27 L 28 30 L 30 25 L 26 22 L 31 22 Z" fill="#ff2e63" />
+  </g>
+
+  <!-- 6. Character Portrait (Hakan - XASİL Kurucusu) -->
+  <g id="characterPortrait">
+    <!-- Body / Shoulders -->
+    <!-- Black Shirt -->
+    <path d="M 170 510 C 170 420 220 380 300 380 C 380 380 430 420 430 510 Z" fill="url(#shirtGrad)" />
+    <!-- Inner White V-Neck -->
+    <path d="M 265 400 L 300 460 L 335 400 Z" fill="#eef2f7" />
+    <!-- Dark Jacket / Shirt Collar -->
+    <path d="M 230 390 L 270 460 L 250 510 L 210 430 Z" fill="#131922" />
+    <path d="M 370 390 L 330 460 L 350 510 L 390 430 Z" fill="#131922" />
+
+    <!-- Neck -->
+    <path d="M 265 330 L 335 330 L 340 405 L 260 405 Z" fill="#cc8f6e" />
+    <path d="M 265 330 L 335 330 L 335 370 L 265 370 Z" fill="#d89b7a" />
+    <!-- Neck Shadow -->
+    <path d="M 265 375 C 290 390 310 390 335 375 L 340 405 L 260 405 Z" fill="#b07352" opacity="0.6" />
+
+    <!-- Head & Face Structure -->
+    <path d="M 220 220 C 220 140 380 140 380 220 C 380 300 350 350 300 350 C 250 350 220 300 220 220 Z" fill="url(#skinGrad)" />
+
+    <!-- Ears -->
+    <ellipse cx="218" cy="235" rx="10" ry="18" fill="#cc8f6e" />
+    <ellipse cx="382" cy="235" rx="10" ry="18" fill="#cc8f6e" />
+
+    <!-- Hair (Modern Short Fade with Styled Top) -->
+    <path d="M 215 210 C 215 140 250 120 300 120 C 350 120 385 140 385 210 C 380 170 350 140 300 140 C 250 140 220 170 215 210 Z" fill="url(#hairGrad)" />
+    <path d="M 218 200 C 225 150 260 125 300 122 C 345 125 375 150 382 200 C 375 165 345 145 300 145 C 255 145 225 165 218 200 Z" fill="#3a302c" />
+
+    <!-- Eyebrows -->
+    <path d="M 240 205 Q 265 195 285 203" fill="none" stroke="#231b19" stroke-width="4.5" stroke-linecap="round" />
+    <path d="M 360 205 Q 335 195 315 203" fill="none" stroke="#231b19" stroke-width="4.5" stroke-linecap="round" />
+
+    <!-- Eyes -->
+    <!-- Left Eye -->
+    <ellipse cx="262" cy="220" rx="13" ry="8" fill="#ffffff" />
+    <circle cx="262" cy="220" r="6" fill="#3d281d" />
+    <circle cx="264" cy="218" r="2" fill="#ffffff" />
+    <!-- Right Eye -->
+    <ellipse cx="338" cy="220" rx="13" ry="8" fill="#ffffff" />
+    <circle cx="338" cy="220" r="6" fill="#3d281d" />
+    <circle cx="340" cy="218" r="2" fill="#ffffff" />
+
+    <!-- Nose -->
+    <path d="M 300 215 L 295 255 L 305 255 Z" fill="#be7f5e" opacity="0.5" />
+    <path d="M 293 256 Q 300 262 307 256" fill="none" stroke="#a06040" stroke-width="2.5" stroke-linecap="round" />
+
+    <!-- Handsome Warm Smile & Teeth -->
+    <path d="M 260 280 Q 300 315 340 280 Z" fill="#1f120c" />
+    <path d="M 264 282 Q 300 298 336 282 Q 300 286 264 282 Z" fill="#ffffff" />
+    <path d="M 260 280 Q 300 318 340 280" fill="none" stroke="#a85940" stroke-width="2" />
+
+    <!-- Neat Groomed Beard & Stubble -->
+    <path d="M 222 240 C 222 320 250 348 300 348 C 350 348 378 320 378 240 C 370 290 345 340 300 340 C 255 340 230 290 222 240 Z" fill="#1c1614" opacity="0.75" />
+    <!-- Mustache -->
+    <path d="M 272 272 Q 300 268 328 272 Q 300 280 272 272 Z" fill="#241c19" opacity="0.85" />
+
+    <!-- Small Characteristic Beauty Mark / Mole (as seen in photo) -->
+    <circle cx="355" cy="245" r="2" fill="#3b2219" />
+  </g>
+
+  <!-- 7. Ambient Foreground Hologram Light Highlights -->
+  <circle cx="300" cy="270" r="215" fill="none" stroke="url(#ringGrad)" stroke-width="2" opacity="0.5" />
+
+  <!-- 8. Bottom Typography Badge "HAKAN - XASİL KURUCUSU" -->
+  <g transform="translate(300, 520)">
+    <!-- Badge Background Banner -->
+    <rect x="-210" y="-22" width="420" height="44" rx="22" fill="#08101a" stroke="#00f2fe" stroke-width="2" filter="url(#cyanGlow)" opacity="0.95" />
+    <!-- Text -->
+    <text x="0" y="7" font-family="'Plus Jakarta Sans', 'Segoe UI', sans-serif" font-weight="900" font-size="20" fill="#ffffff" text-anchor="middle" letter-spacing="3">
+      HAKAN - XASİL KURUCUSU
+    </text>
+  </g>
+</svg>

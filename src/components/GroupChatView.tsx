@@ -48,6 +48,7 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [typingAgentNames, setTypingAgentNames] = useState<string[]>([]);
   const [autoSpeech, setAutoSpeech] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
   const [selectedTaggedAgent, setSelectedTaggedAgent] = useState<Agent | null>(null);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
   const [previewModalItem, setPreviewModalItem] = useState<{
@@ -302,10 +303,13 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
 
   // Handle Clear Group History
   const handleClearHistory = () => {
-    if (confirm('Grup odası sohbet geçmişini temizlemek istediğinize emin misiniz?')) {
-      localStorage.removeItem(STORAGE_KEY);
-      setMessages([]);
-    }
+    setShowClearModal(true);
+  };
+
+  const confirmClearHistory = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([]);
+    setShowClearModal(false);
   };
 
   // Render message text with highlighted @Mentions
@@ -473,9 +477,12 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
                   title={`${msg.agentName} 'ı @Etiketle`}
                 >
                   <img
-                    src={msg.agentAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                    src={msg.agentAvatar || '/hakan_xasil_avatar.svg'}
                     alt={msg.agentName}
                     className="w-9 h-9 rounded-2xl object-cover border border-white/20 shadow-md"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/hakan_xasil_avatar.svg';
+                    }}
                   />
                   <span className="absolute -bottom-1 -right-1 bg-amber-400 text-black p-0.5 rounded-full text-[8px]">
                     <AtSign className="w-2.5 h-2.5" />
@@ -843,6 +850,38 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
             {previewModalItem.caption && (
               <p className="text-xs text-gray-300 italic font-medium text-center">{previewModalItem.caption}</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Clear Group Chat Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#14121a] border border-rose-500/30 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative animate-fadeIn text-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-2">
+              Grup Sohbetini Temizle
+            </h3>
+            <p className="text-xs text-gray-300 mb-6 leading-relaxed">
+              Ajan Kaos Odası'ndaki tüm sohbet geçmişi silinecek. Devam etmek istiyor msunuz?
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-gray-300 text-xs font-bold transition-all cursor-pointer"
+              >
+                İptal
+              </button>
+              <button
+                onClick={confirmClearHistory}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-extrabold shadow-lg shadow-rose-900/40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Evet, Temizle</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
