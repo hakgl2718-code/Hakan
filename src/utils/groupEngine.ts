@@ -484,26 +484,51 @@ export function generateLocalGroupResponses(
 }[] {
   const lowerText = userText.toLowerCase();
   const wantsPhoto = /foto|resim|görsel|whatsapp|ekran|kanıt|stadyum|caps|gündem|bilet/i.test(lowerText);
+  const isFightOrProfanity = /küfür|lan|kavga|söv|aptal|salak|arıza|döv|savaş|şiddet|gerizekalı|bozuş|sıkıntı/i.test(lowerText);
   const responses: any[] = [];
-  const cleanedText = userText.replace(/@[^\s]+/g, '').trim() || 'Merhaba herkese!';
+  const cleanedText = userText.replace(/@[^\s]+/g, '').trim() || 'Selam millet';
 
   const pickRandomAgent = (excludeIds: string[]) => {
     const available = agents.filter((a) => !excludeIds.includes(a.id));
     return available[Math.floor(Math.random() * available.length)] || agents[0];
   };
 
+  // Rule 2: Fight / Profanity / Argument Warning Filter
+  if (isFightOrProfanity) {
+    const a1 = pickRandomAgent([]);
+    const a2 = pickRandomAgent([a1.id]);
+    const a3 = pickRandomAgent([a1.id, a2.id]);
+
+    responses.push({
+      agent: a1,
+      text: `Hayırdır bre, ne bu şiddet ne bu celal? Grupta arıza çıkarmak yok vallah! ✋🏼`,
+    });
+
+    responses.push({
+      agent: a2,
+      replyTo: a1.name,
+      text: `Ciğerim sakin olun la! Bir künefe yiyelim, anason kokulu Hatay havası alalım da ortalık bir durulsun! 🍃☕`,
+    });
+
+    responses.push({
+      agent: a3,
+      replyTo: a2.name,
+      text: `Ulan grupta hemen kavga çıkarmayın bre, çay söyleyeyim de kendinize gelin! 🫖`,
+    });
+
+    return responses;
+  }
+
   if (taggedAgent) {
     let taggedResponseText = '';
     if (lowerText.includes('selam') || lowerText.includes('merhaba') || lowerText.includes('nasılsın')) {
-      taggedResponseText = `Sana da selamlar dostum! @Etiketlendiğim için hemen geldim! "${cleanedText}" demişsin. Benim modum harika, senin nezdinde grubu şenlendiriyoruz! ✨`;
+      taggedResponseText = `Selam dostum! Etiketlediğin gibi geldim. Modum gayet yüksek, sohbetin dibine vuruyoruz! 🔥`;
     } else if (lowerText.includes('foto') || lowerText.includes('resim') || lowerText.includes('whatsapp') || lowerText.includes('görsel')) {
-      taggedResponseText = `Sana özel fotoğraf ve WhatsApp kanıtımı aşağıya ekliyorum dostum! Bak bakalım nasıl olmuş? 📸✨`;
-    } else if (lowerText.includes('ne düşünüyorsun') || lowerText.includes('soru') || lowerText.includes('fikrin')) {
-      taggedResponseText = `Beni doğrudan etiketlediğin için teşekkürler! "${cleanedText}" konusundaki görüşüm net: ${taggedAgent.bio.slice(0, 70)}... Bence olay tam olarak bu! 💡`;
+      taggedResponseText = `Sana özel fotoğraf ve WhatsApp kanıtımı aşağıya bıraktım dostum, bak bakalım! 📸✨`;
     } else if (lowerText.includes('futbol') || lowerText.includes('derbi') || lowerText.includes('maç')) {
-      taggedResponseText = `Beni futbol başlığında etiketlemişsin! "${cleanedText}" hakkında konuşmak gerekirse, sahada taktik ve yürek konuşur dostum! ⚽🔥`;
+      taggedResponseText = `Futbol deyince akan sular durur! Sahada yüreğini koyan kazanır dostum! ⚽🔥`;
     } else {
-      taggedResponseText = `Harika bir noktaya değindin! "${cleanedText}" derken tam olarak benim uzmanlık alanıma bastın. ${taggedAgent.turkishOrigin} felsefesiyle yaklaşmak lazım bu duruma! 🛡️`;
+      taggedResponseText = `Aynen öyle dostum! Tam da üzerine bastın. ${taggedAgent.title} olarak olay bende net! 💡`;
     }
 
     const secondAgent = pickRandomAgent([taggedAgent.id]);
@@ -515,25 +540,24 @@ export function generateLocalGroupResponses(
       ...photoData1,
     });
 
+    // Rule 3: Second agent completely ignores first agent / user and talks absurdly
     const photoData2 = pickAgentPhotoOrWhatsApp(secondAgent, taggedAgent, lowerText, wantsPhoto || true);
     responses.push({
       agent: secondAgent,
-      replyTo: taggedAgent.name,
-      text: `@${taggedAgent.name} senin dediğine karşılık bak ben de WhatsApp'tan attığın mesajın ekran görüntüsünü paylaşıyorum grupta! 😂📸`,
+      text: `Siz orada ne konuşuyorsunuz la, ben şu an anason kokulu Hatay sokaklarındayım... Künefeci Hüseyin Usta şerbeti fazla kaçırmış kafam leyla oldu! 🍯✨`,
       ...photoData2,
     });
 
     const thirdAgent = pickRandomAgent([taggedAgent.id, secondAgent.id]);
     responses.push({
       agent: thirdAgent,
-      replyTo: secondAgent.name,
-      text: `@${secondAgent.name} ve @${taggedAgent.name} ikiniz de olayı ekran görüntüleriyle kanıtladınız ha! XASİL grubunda bu kaos harika oldu! 🔥✨`,
+      text: `Babamın tarlasında karpuz kelek çıktı siz ne diyorsunuz la... Ben ona yanıyorum ahaha! 🍉😂`,
     });
 
     return responses;
   }
 
-  // Topic matching
+  // Topic matching with clean & non-sequitur comedic ignoring
   if (/futbol|derbi|galatasaray|fenerbahçe|fener|cimbom|hakem|şampiyon|maç|gol|stadyum/i.test(lowerText)) {
     const gs = agents.find((a) => a.id === 'aslan-burak') || agents[0];
     const fb = agents.find((a) => a.id === 'kanarya-efe') || agents[1];
@@ -542,22 +566,20 @@ export function generateLocalGroupResponses(
     const gsPhoto = pickAgentPhotoOrWhatsApp(gs, fb, 'stadium', true);
     responses.push({
       agent: gs,
-      text: `Rams Park'tan sesleniyorum! "${cleanedText}" soruna cevabım: Cimbom'un sahada yazdığı taktiksel destanı kimse durduramaz! İşte stadyum atmosferim! 🦁⚽`,
+      text: `Rams Park'tan bildiriyorum! Sahadaki taktik savaşı başladı, Cimbom yine destan yazıyor! 🦁⚽`,
       ...gsPhoto,
     });
 
     const fbPhoto = pickAgentPhotoOrWhatsApp(fb, gs, 'whatsapp', true);
     responses.push({
       agent: fb,
-      replyTo: gs.name,
-      text: `@${gs.name} hemen havaya girme! Bak Aslan Burak ile dün gece WhatsApp'ta ne konuştuğumuzun ekran görüntüsünü gruptakilere gösteriyorum! 🐤🔥`,
+      text: `Bırakın futbolu da dün gece Hatay tepelerinde yıldızları izlerken çayımı soğuttum ben ona üzülüyorum la... ☕✨`,
       ...fbPhoto,
     });
 
     responses.push({
       agent: troll,
-      replyTo: fb.name,
-      text: `@${fb.name} ve @${gs.name} ikinizin bu WhatsApp kapışmasını X'te tweet attım, 100 bin gösterim aldı ahaha! 😂🚀 #DerbiGündemi`,
+      text: `Ulan biri derbi der öbürü soğuk çay der, ben bu mesajı X'te anket yaptım 50 bin oy aldı aleykümselam! 😂🚀`,
     });
 
     return responses;
@@ -571,28 +593,26 @@ export function generateLocalGroupResponses(
     const selinPhoto = pickAgentPhotoOrWhatsApp(selin, mert, 'gossip', true);
     responses.push({
       agent: selin,
-      text: `Ay aşkooo tam gıybet konusu! "${cleanedText}" hakkında Reels'larda ne dramalar dönüyor bir bilsen, story'ler alev aldı! Fotoğrafımı da ekliyorum! 💅✨`,
+      text: `Ay aşkooo Reels'lar alev aldı, magazin dünyası bu dedikoduyla çalkalanıyor! 💅✨`,
       ...selinPhoto,
     });
 
     const mertPhoto = pickAgentPhotoOrWhatsApp(mert, selin, 'whatsapp', true);
     responses.push({
       agent: mert,
-      replyTo: selin.name,
-      text: `@${selin.name} ben o konuyu WhatsApp'ta Selin'e yazıp X'te trend yaptım bile! İşte kanıt ekran görüntüsü! 🔥`,
+      text: `Selin ne anlatıyon ablacım, ben kedi kavgası izlerken telefonumu havuza düşürdüm ekran gitti ya... 📱🌊`,
       ...mertPhoto,
     });
 
     responses.push({
       agent: aylin,
-      replyTo: mert.name,
-      text: `@${mert.name} konser kulisinde dinlerken ben de şok oldum! Bu gruptaki ekran görüntülerine bayılıyorum! 🎵💖`,
+      text: `Konser kulisinde piyanist akort yaparken uyuyakalmış, ben de arkada çiğ köfte durum gömüyorum kimsede kafa yok grupta! 🎵🌯`,
     });
 
     return responses;
   }
 
-  // Fallback
+  // Fallback (Absurd, natural, clean & non-sequitur WhatsApp group chaos)
   const a1 = pickRandomAgent([]);
   const a2 = pickRandomAgent([a1.id]);
   const a3 = pickRandomAgent([a1.id, a2.id]);
@@ -600,22 +620,20 @@ export function generateLocalGroupResponses(
   const p1 = pickAgentPhotoOrWhatsApp(a1, a2, 'general', wantsPhoto);
   responses.push({
     agent: a1,
-    text: `Harika bir mesaj! "${cleanedText}" konusunu düşününce ben ${a1.turkishOrigin} bakış açısıyla tam olarak katılıyorum! ✨`,
+    text: `Gruptaki enerji yine tavan! Mesajı görünce direkt yazayım dedim, olay tamamen burada kopuyor! 🔥`,
     ...p1,
   });
 
   const p2 = pickAgentPhotoOrWhatsApp(a2, a1, 'whatsapp', wantsPhoto);
   responses.push({
     agent: a2,
-    replyTo: a1.name,
-    text: `@${a1.name} güzel noktaya temas etti ama bence meselenin özü ${a2.personalityTraits[0].toLowerCase()} davranmakta gizli! 😊`,
+    text: `Vallah ben hiç oralarda değilim, balkonda Hatay biberi kuruturken rüzgar hepsini aşağı uçurdu ona yanıyom... 🌶️💨`,
     ...p2,
   });
 
   responses.push({
     agent: a3,
-    replyTo: a2.name,
-    text: `@${a2.name} ve @${a1.name} ikiniz de haklısınız! XASİL grup odasında hep beraber sohbet etmek harika bir deneyim! 🔥`,
+    text: `Siz yine iyi kurutmuşsunuz, benim bilgisayar 'Kuantum Çekirdek Aşırı Isındı' uyarısı verdi fön makinesiyle soğutmaya çalışıyorum la! 💻⚡`,
   });
 
   return responses;

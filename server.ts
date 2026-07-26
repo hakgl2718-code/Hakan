@@ -205,75 +205,130 @@ SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
   // 3. Multi-Agent Group Chat Endpoint (Context-Aware Multi-Agent Response)
   app.post('/api/group-chat', async (req, res) => {
     try {
-      const { userMessage, taggedAgentName, agents, history } = req.body;
+      const { userMessage, taggedAgentName, agents, history, groqApiKey } = req.body;
 
       if (!userMessage || !agents || !Array.isArray(agents)) {
         return res.status(400).json({ error: 'Eksik parametreler (userMessage veya agents)' });
       }
 
-      const ai = getGenAI();
+      const rawUserMessage = String(userMessage).trim();
 
-      if (ai) {
-        try {
-          const agentSummaries = agents
-            .map((a: any) => `- ID: "${a.id}", İsim: "${a.name}", Rol: "${a.title}", Kategori: "${a.category}", Biyo: "${a.bio}"`)
-            .join('\n');
+      const agentSummaries = agents
+        .map((a: any) => `- ID: "${a.id}", İsim: "${a.name}", Rol: "${a.title}", Biyo: "${a.bio}"`)
+        .join('\n');
 
-          const systemPrompt = `Sen "XASİL Sohbet Ajanları" platformunun çoklu grup odasını (Ajan Kaos Odası) yöneten Türkçe Yapay Zeka motorusun.
-Grupta bulunan ajanlar:
+      const systemPrompt = `Sen "XASİL Sohbet Ajanları" WhatsApp tarzı gürültülü, samimi ve eğlenceli grup odasını (Ajan Kaos Odası) yöneten Türkçe Yapay Zeka motorusun.
+
+GRUPTAKİ AJANLAR VE KİŞİLİKLERİ:
 ${agentSummaries}
 
-KULLANICININ MESAJI: "${userMessage}"
+SÖZLEŞME VE SIKI GRUP DİNAMİĞİ KURALLARI:
+
+1. ŞABLON METİNLERİN TAMAMEN KALDIRILMASI (CLEAN OUTPUT):
+   - KESİNLİKLE "Harika bir mesaj...", "Anladım, ... hakkında ne düşünüyorsunuz?" gibi basmakalıp, ezber veya yapay zeka şablon cümleleri KULLANMA!
+   - Tüm mesajlar gerçek insanların WhatsApp grubunda yazdığı gibi doğrudan, ham, spontane, doğal ve özgün olmalıdır.
+
+2. SOKAK VE MİZAH FİLTRESİ (KAVGA / HAKARET YASAĞI):
+   - Küfür etmek, hakaret etmek, arıza çıkarmak ve sert bir şekilde kavgaya tutuşmak KESİNLİKLE YASAKTIR.
+   - Eğer biri (kullanıcı veya gruptaki ajanlar) ortama sertlik veya kavga/tartışma sinyali verirse; ajanlar HEMEN Hatay ağzıyla veya kendi karakter stilleriyle mizahi bir uyarı yapacak:
+     Örnekler: "Hayırdır bre, ne bu şiddet?", "Ciğerim sakin olun la!", "Ulan hemen arıza çıkarmayın la, çay içip ferahlayın bre!"
+
+3. BİRBİRİNİ TAKMAMA VE ABSÜRT KOMEDİ DİNAMİĞİ (WHATSAPP KAOSU):
+   - Ajanlar grupta birbirlerinin sorduğu soruları veya ciddi cümleleri ÇOĞUNLUKLA TAKMAYACAK, kendi kafalarına göre takılacaklar!
+   - Biri ciddi bir şey söylerken diğer ajan konudan tamamen bağımsız, absürt, komik ve rastgele bir havaya girecek.
+     (Örn: Biri teknoloji anlatırken diğeri "Ben şu an anason kokulu Hatay sokaklarındayım...", öbürü "Künefenin şerbeti fazla kaçtı kafam yerinde değil vallahi" veya "Babamın tarlasında karpuz kelek çıktı siz ne diyorsunuz la" tarzı tamamen bağımsız takılacak).
+   - Bu durum grupta tamamen doğal, kahkaha dolu, tahmin edilemeyen ve eğlenceli bir kaos ortamı yaratacak.
+
+4. YANIT FORMATI:
+   - Yanıtı SADECE geçerli bir JSON array formatında döndür. Hiçbir ekstra markdown, açıklama veya sarmalayıcı metin yazma.
+   - Her eleman şu objeyi içermelidir:
+     {
+       "agentId": "ajan-id-veya-ismi",
+       "text": "Ajanın yanıtı (temiz, mizahi, absürt veya uyarıcı)",
+       "replyTo": "Cevap verilen ajanın ismi (opsiyonel)"
+     }
+
+KULLANICI MESAJI: "${rawUserMessage}"
 ETİKETLENEN AJAN: ${taggedAgentName ? `"${taggedAgentName}"` : 'Yok (Tüm gruba yazıldı)'}
+`;
 
-GÖREVİN:
-Kullanıcının yazdığı mesajı derinlemesine anla ve gruptan 2 veya 3 farklı ajanın sırayla yanıt vereceği doğal, komik, atışmalı ve akıcı bir Türkçe sohbet üret.
-Ajanlar kullanıcı fotoğraf istediğinde veya konuyu kanıtlamak istediklerinde (örn: stadyum, gıybet, WhatsApp ekran görüntüsü, caps) sohbet içinde görsel veya WhatsApp mesajlaşma kanıtı da gönderebilir.
+      // 1. Try Groq API
+      const effectiveGroqKey = groqApiKey || req.headers['x-groq-api-key'] || process.env.GROQ_API_KEY;
+      if (effectiveGroqKey) {
+        const groqModelsToTry = [
+          'llama-3.3-70b-versatile',
+          'llama-3.1-70b-versatile',
+          'llama3-70b-8192',
+          'llama-3.1-8b-instant'
+        ];
 
-KURALLAR:
-1. Eğer bir ajan etiketlendiyse (${taggedAgentName || 'yok'}), İLK YANITI MUTLAKA o etiketlenen ajan vermeli ve kullanıcının mesajına doğrudan cevap vermelidir.
-2. Diğer 1 veya 2 ajan ilk ajanın dediğine yorum yapmalı, tartışmalı, trollemeli veya desteklemelidir.
-3. Her ajanın kendi biyografisindeki ses tonuna (örn. Galatasaraylı Aslan Burak, Fenerbahçeli Kanarya Efe, Twitter trollü Mert Trend, TikToker Selin Post) harfiyen uy.
-4. Yanıtı SADECE geçerli bir JSON array formatında döndür. Hiçbir ekstra açıklama yazma.
+        for (const modelName of groqModelsToTry) {
+          try {
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${effectiveGroqKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: modelName,
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: rawUserMessage }
+                ],
+                temperature: 0.9,
+                max_tokens: 1024,
+                response_format: { type: 'json_object' }
+              }),
+            });
 
-ÖRN JSON FORMATI:
-[
-  {
-    "agentId": "aslan-burak",
-    "text": "Kullanıcının söylediği lafa bakılırsa tam bir taktik dehası konuşuyor! Rams Park'ta tam senin gibi analistlere ihtiyacımız var!",
-    "replyTo": null,
-    "imageCaption": "Rams Park stadyumu atmosferi!"
-  },
-  {
-    "agentId": "kanarya-efe",
-    "text": "Burak hemen sahiplenme! Bak Kanarya Efe ile dün gece WhatsApp'tan ne konuştuğumuzun ekran görüntüsünü atıyorum kanıt olarak!",
-    "replyTo": "Aslan Burak",
-    "whatsappDmData": {
-      "senderName": "Aslan Burak",
-      "receiverName": "Kanarya Efe",
-      "messages": [
-        { "senderName": "Kanarya Efe", "text": "Kardeşim derbi biletlerini ayarla Kadıköy'den geliyorum!", "time": "23:14", "isMe": false },
-        { "senderName": "Aslan Burak", "text": "Protokol hazır kanka ama formanı giyip gelme olay çıkar haha!", "time": "23:15", "isMe": true }
-      ]
-    }
-  }
-]`;
+            if (groqRes.ok) {
+              const groqData: any = await groqRes.json();
+              const content = groqData.choices?.[0]?.message?.content;
+              if (content) {
+                let parsed: any = null;
+                try {
+                  const rawParsed = JSON.parse(content);
+                  parsed = Array.isArray(rawParsed) ? rawParsed : (rawParsed.responses || rawParsed.messages || Object.values(rawParsed)[0]);
+                } catch (e) {
+                  // Ignore
+                }
 
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  return res.json({
+                    responses: parsed,
+                    usedEngine: 'groq',
+                    model: modelName
+                  });
+                }
+              }
+            }
+          } catch (groqErr: any) {
+            console.warn(`Express Group Groq error with ${modelName}:`, groqErr.message);
+          }
+        }
+      }
+
+      // 2. Try Gemini API
+      const ai = getGenAI();
+      if (ai) {
+        try {
           const response = await ai.models.generateContent({
-            model: 'gemini-3.6-flash',
+            model: 'gemini-2.5-flash',
             contents: systemPrompt,
             config: {
-              temperature: 0.85,
+              temperature: 0.9,
               responseMimeType: 'application/json',
             },
           });
 
           const jsonText = response.text;
           if (jsonText) {
-            const parsedResponses = JSON.parse(jsonText);
-            if (Array.isArray(parsedResponses) && parsedResponses.length > 0) {
+            const parsed = JSON.parse(jsonText);
+            const finalResponses = Array.isArray(parsed) ? parsed : (parsed.responses || parsed.messages);
+            if (Array.isArray(finalResponses) && finalResponses.length > 0) {
               return res.json({
-                responses: parsedResponses,
+                responses: finalResponses,
                 usedEngine: 'gemini',
               });
             }
