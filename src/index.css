@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@keyframes spin-fast {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes color-cycle {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(180deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes rainbow-pulse {
+  0% {
+    border-color: #00d2ff;
+    box-shadow: 0 0 15px #00d2ff, inset 0 0 10px #00d2ff;
+  }
+  33% {
+    border-color: #a855f7;
+    box-shadow: 0 0 15px #a855f7, inset 0 0 10px #a855f7;
+  }
+  66% {
+    border-color: #10b981;
+    box-shadow: 0 0 15px #10b981, inset 0 0 10px #10b981;
+  }
+  100% {
+    border-color: #00d2ff;
+    box-shadow: 0 0 15px #00d2ff, inset 0 0 10px #00d2ff;
+  }
+}
+
+.animate-spin-fast {
+  animation: spin-fast 1s linear infinite;
+}
+
+.animate-color-cycle {
+  animation: color-cycle 3s linear infinite;
+}
+
+@keyframes spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes neo-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.8));
+  }
+  50% {
+    transform: scale(1.04);
+    filter: drop-shadow(0 0 22px rgba(0, 240, 255, 1)) drop-shadow(0 0 10px rgba(239, 68, 68, 0.6));
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 8s linear infinite;
+}
+
+.animate-neo-pulse {
+  animation: neo-pulse 3s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+

@@ -1,0 +1,6 @@
+{
+  "name": "XASİL Sohbet Ajanları",
+  "description": "Açık kaynaklı yerel model destekli ve akıllı yapay zeka ajanları ile Türkçe sohbet, hafıza paneli ve karakter stüdyosu uygulaması.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
