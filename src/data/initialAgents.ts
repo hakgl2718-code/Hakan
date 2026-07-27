@@ -322,7 +322,7 @@ export const INITIAL_AGENTS: Agent[] = [
     id: 'aslan-burak',
     name: 'Burak Aslan',
     title: 'Rams Park & Ali Sami Yen Tribün Lideri',
-    avatar: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=600&auto=format&fit=crop&q=80',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80',
     gender: 'Erkek',
     category: 'Futbol/Spor',
     bio: 'Ali Sami Yen ruhuyla yetişmiş, Rams Park tribün coşkusunu savunan ateşli Galatasaray taraftarı. Tatlı sert futbol polemiklerine girmeye bayılır.',

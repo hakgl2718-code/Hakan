@@ -1,4 +1,5 @@
 import { Agent, GroupChatMessage } from '../types';
+import { generateNanoBananaImage } from './nanoBananaEngine';
 
 export interface GroupScenario {
   id: string;
@@ -12,21 +13,21 @@ export const GROUP_SCENARIOS: GroupScenario[] = [
   {
     id: 'derbi-atesi',
     title: '⚽ Derbi Ateşi (GS vs FB)',
-    description: 'Aslan Burak ve Kanarya Efe stadyum atmosferini ve WhatsApp atışmalarını odaya taşıyor!',
+    description: 'Aslan Burak ve Kanarya Efe stadyum atmosferini ve derbi heyecanını odaya taşıyor!',
     icon: '⚽',
-    initialTopic: 'Sizce bu haftaki derbiyi kim kazanır? Stadyum veya WhatsApp mesaj kanıtlarınızı gösterin!',
+    initialTopic: 'Sizce bu haftaki derbiyi kim kazanır? Stadyum ve tribün fotoğraflarınızı paylaşın!',
   },
   {
     id: 'sosyal-giybet',
     title: '🔥 Twitter & TikTok Linç Odası',
-    description: 'Mert Trend ve Selin Post ile son trendler, Capsler ve magazin WhatsApp dedikoduları!',
+    description: 'Mert Trend ve Selin Post ile son trendler, Capsler ve magazin gıybetleri!',
     icon: '🔥',
     initialTopic: 'Sosyal medyada patlayan son influencer kavgası ve gündem fotoğrafları hakkında ne düşünüyorsunuz?',
   },
   {
     id: 'bilim-mitoloji',
     title: '⚛️ Kuantum vs Kadim Mitoloji',
-    description: 'Dr. Kaan Eren ile Göktürk Barlas bilimin ve efsanelerin ekran görüntüleriyle tartışıyor.',
+    description: 'Dr. Kaan Eren ile Göktürk Barlas bilimin ve efsanelerin fotoğraflarıyla tartışıyor.',
     icon: '⚛️',
     initialTopic: 'İnsanlığın geleceği kuantum teknolojisinde mi yoksa kadim köklerimizde mi?',
   },
@@ -91,14 +92,14 @@ export const AGENT_IMAGE_BANK: Record<
     },
     {
       url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
-      caption: '📱 Sosyal Medyada Viral Olan Son Caps Ekran Alıntısı',
+      caption: '📱 Sosyal Medyada Viral Olan Son Caps Görseli',
       type: 'agenda_meme',
     },
   ],
   'selin-post': [
     {
       url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=80',
-      caption: '☕ Bebek Koyu\'nda Kahve Sohbeti ve TikTok Story Ekranı!',
+      caption: '☕ Bebek Koyu\'nda Kahve Sohbeti ve TikTok Story karesi!',
       type: 'lore_photo',
     },
     {
@@ -198,124 +199,7 @@ export const AGENT_IMAGE_BANK: Record<
 // Set to track used image URLs so that photos never repeat unnecessarily
 const usedImageUrls = new Set<string>();
 
-export function generateWhatsAppDmData(
-  agentA: Agent,
-  agentB: Agent,
-  topicKey?: string
-) {
-  const now = new Date();
-  const time1 = `${now.getHours()}:${String(Math.max(0, now.getMinutes() - 5)).padStart(2, '0')}`;
-  const time2 = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-  if ((agentA.id === 'aslan-burak' && agentB.id === 'kanarya-efe') || (agentA.id === 'kanarya-efe' && agentB.id === 'aslan-burak')) {
-    return {
-      senderName: agentA.name,
-      receiverName: agentB.name,
-      receiverAvatar: agentB.avatar,
-      messages: [
-        {
-          senderName: 'Aslan Burak',
-          text: 'Kardeşim derbi biletlerini Rams Park protokolüne ayırdım, geliyor musun? ⚽',
-          time: time1,
-          isMe: agentA.id === 'aslan-burak',
-        },
-        {
-          senderName: 'Kanarya Efe',
-          text: 'Kadıköy\'den çıkıyorum ama Çubuklu formamı çıkarman imkansız! Kadıköy ruhunu göreceksiniz 🐤🔥',
-          time: time2,
-          isMe: agentA.id === 'kanarya-efe',
-        },
-      ],
-    };
-  }
-
-  if ((agentA.id === 'mert-trend' && agentB.id === 'selin-post') || (agentA.id === 'selin-post' && agentB.id === 'mert-trend')) {
-    return {
-      senderName: agentA.name,
-      receiverName: agentB.name,
-      receiverAvatar: agentB.avatar,
-      messages: [
-        {
-          senderName: 'Selin Post',
-          text: 'Ay Mertttt TikTok\'taki o son influencer kavgası ortalığı yıktı! İzledin mi? 💅',
-          time: time1,
-          isMe: agentA.id === 'selin-post',
-        },
-        {
-          senderName: 'Mert Trend',
-          text: 'Gördüm kanka X\'te flood yazıp caps yaptım bile, 50k RT geldi ahahaha! 😂🔥',
-          time: time2,
-          isMe: agentA.id === 'mert-trend',
-        },
-      ],
-    };
-  }
-
-  if ((agentA.id === 'asya-neon' && agentB.id === 'kaan-eren') || (agentA.id === 'kaan-eren' && agentB.id === 'asya-neon')) {
-    return {
-      senderName: agentA.name,
-      receiverName: agentB.name,
-      receiverAvatar: agentB.avatar,
-      messages: [
-        {
-          senderName: 'Asya Yılmaz',
-          text: 'Kaan Hoca! Kadıköy sunucusundaki kuantum veri gecikmesini 2 milisaniyeye düşürdüm ⚡',
-          time: time1,
-          isMe: agentA.id === 'asya-neon',
-        },
-        {
-          senderName: 'Dr. Kaan Eren',
-          text: 'Mükemmel iş Asya! İTÜ Laboratuvarında kuantum simülasyonunu anında başlatıyorum. ⚛️',
-          time: time2,
-          isMe: agentA.id === 'kaan-eren',
-        },
-      ],
-    };
-  }
-
-  if ((agentA.id === 'ruzgar-alp' && agentB.id === 'karan-gokturk') || (agentA.id === 'karan-gokturk' && agentB.id === 'ruzgar-alp')) {
-    return {
-      senderName: agentA.name,
-      receiverName: agentB.name,
-      receiverAvatar: agentB.avatar,
-      messages: [
-        {
-          senderName: 'Kaptan Rüzgar Alp',
-          text: 'Karan! Bodrum Kekova batığında antik Piri Reis haritasının eksik parçasını çıkardım! ⚓',
-          time: time1,
-          isMe: agentA.id === 'ruzgar-alp',
-        },
-        {
-          senderName: 'Karan Göktürk',
-          text: 'Süper haber Rüzgar. Yerebatan Sarnıcı\'ndaki Medusa sembolleriyle tam örtüşüyor. 🔮',
-          time: time2,
-          isMe: agentA.id === 'karan-gokturk',
-        },
-      ],
-    };
-  }
-
-  return {
-    senderName: agentA.name,
-    receiverName: agentB.name,
-    receiverAvatar: agentB.avatar,
-    messages: [
-      {
-        senderName: agentB.name,
-        text: `Selam @${agentA.name}! Grupta konuşulan konuyu gördün mü? Ne düşünüyorsun?`,
-        time: time1,
-        isMe: false,
-      },
-      {
-        senderName: agentA.name,
-        text: `Aleykümselam! Tam üzerine basmışlar. Ben de şimdi gruba ekran görüntüsü ve detayları atıyordum! 😉✨`,
-        time: time2,
-        isMe: true,
-      },
-    ],
-  };
-}
-
+// Contextual Photo Selector: Picks a relevant high-quality image based on the discussion topic
 export function pickAgentPhotoOrWhatsApp(
   agent: Agent,
   otherAgent?: Agent,
@@ -324,47 +208,16 @@ export function pickAgentPhotoOrWhatsApp(
 ): {
   imageUrl?: string;
   imageCaption?: string;
-  imageType?: 'lore_photo' | 'whatsapp_dm' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
-  whatsappDmData?: {
-    senderName: string;
-    receiverName: string;
-    receiverAvatar?: string;
-    messages: { senderName: string; text: string; time: string; isMe: boolean }[];
-  };
+  imageType?: 'lore_photo' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
 } {
-  const isWhatsApp =
-    topicKey?.includes('whatsapp') ||
-    topicKey?.includes('dm') ||
-    topicKey?.includes('ekran') ||
-    topicKey?.includes('mesaj') ||
-    (forceImage && Math.random() < 0.4);
-
-  if (isWhatsApp && otherAgent) {
-    return {
-      imageType: 'whatsapp_dm',
-      imageCaption: `💬 ${agent.name} ile @${otherAgent.name} arasındaki WhatsApp özel sohbet ekran görüntüsü!`,
-      whatsappDmData: generateWhatsAppDmData(agent, otherAgent, topicKey),
-    };
-  }
-
-  const bank = AGENT_IMAGE_BANK[agent.id] || [
-    {
-      url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80',
-      caption: `✨ ${agent.name} hikayesinden özel görsel`,
-      type: 'lore_photo' as const,
-    },
-  ];
-
-  const unused = bank.filter((item) => !usedImageUrls.has(item.url));
-  const selected = unused.length > 0 ? unused[Math.floor(Math.random() * unused.length)] : bank[Math.floor(Math.random() * bank.length)];
-
-  usedImageUrls.add(selected.url);
-  if (usedImageUrls.size > 40) usedImageUrls.clear();
+  const seed = Math.floor(Math.random() * 1000000);
+  const cleanPrompt = encodeURIComponent(`${agent.name} ${topicKey || 'concept photo'}`);
+  const fluxUrl = `https://image.pollinations.ai/prompt/photograph%20of%20${cleanPrompt}?width=800&height=600&nologo=true&seed=${seed}&model=flux`;
 
   return {
-    imageUrl: selected.url,
-    imageCaption: selected.caption,
-    imageType: selected.type,
+    imageUrl: fluxUrl,
+    imageCaption: `✨ Nano Banana Pro: ${agent.name} özel görseli`,
+    imageType: agent.id.includes('aslan') || agent.id.includes('kanarya') ? 'stadium_photo' : 'lore_photo',
   };
 }
 
@@ -402,61 +255,50 @@ export async function getGroupResponses(
     replyTo?: string;
     imageUrl?: string;
     imageCaption?: string;
-    imageType?: 'lore_photo' | 'whatsapp_dm' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
-    whatsappDmData?: any;
+    imageType?: 'lore_photo' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
   }[]
 > {
   const taggedAgent = explicitTaggedAgent || detectTaggedAgent(userText, agents);
-  const wantsPhoto = /foto|resim|görsel|whatsapp|ekran|kanıt|stadyum|caps|gündem|bilet/i.test(userText);
 
   try {
+    const storedGroqKey = localStorage.getItem('xasil_groq_api_key') || '';
+    const storedGeminiKeys = localStorage.getItem('xasil_gemini_keys') || '';
+
     const res = await fetch('/api/group-chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-gemini-keys': storedGeminiKeys,
+        'x-groq-api-key': storedGroqKey,
+      },
       body: JSON.stringify({
         userMessage: userText,
         taggedAgentName: taggedAgent ? taggedAgent.name : null,
         agents: agents,
         history: history.slice(-6),
+        groqApiKey: storedGroqKey,
+        geminiKeys: storedGeminiKeys ? JSON.parse(storedGeminiKeys) : [],
       }),
     });
 
     if (res.ok) {
       const data = await res.json();
       if (data.responses && Array.isArray(data.responses) && data.responses.length > 0) {
-        const mapped = data.responses
-          .map((r: any, idx: number) => {
-            const ag = agents.find((a) => a.id === r.agentId || a.name === r.agentId) || agents[0];
-            const otherAg = agents.find((a) => a.id !== ag.id) || agents[1];
+        const mapped = data.responses.map((r: any) => {
+          const ag = agents.find((a) => a.id === r.agentId || a.name === r.agentId) || agents[0];
+          return {
+            agent: ag,
+            text: r.text,
+            replyTo: r.replyTo || undefined,
+            imageUrl: r.imageUrl,
+            imageCaption: r.imageCaption,
+            imageType: r.imageType,
+          };
+        });
 
-            let imgData: any = {};
-            if (r.whatsappDmData) {
-              imgData = {
-                imageType: 'whatsapp_dm',
-                imageCaption: r.imageCaption || `💬 ${ag.name} ile WhatsApp mesajlaşma kanıtı!`,
-                whatsappDmData: r.whatsappDmData,
-              };
-            } else if (r.imageUrl) {
-              imgData = {
-                imageUrl: r.imageUrl,
-                imageCaption: r.imageCaption || `${ag.name} paylaştığı görsel`,
-                imageType: 'lore_photo',
-              };
-            } else if (wantsPhoto || idx === 1) {
-              imgData = pickAgentPhotoOrWhatsApp(ag, otherAg, userText, wantsPhoto);
-            }
-
-            return {
-              agent: ag,
-              text: r.text,
-              replyTo: r.replyTo || undefined,
-              ...imgData,
-            };
-          })
-          .filter((item: any) => item.agent && item.text);
-
-        if (mapped.length > 0) {
-          return mapped;
+        const validMapped = mapped.filter((item: any) => item.agent && item.text);
+        if (validMapped.length > 0) {
+          return validMapped;
         }
       }
     }
@@ -479,11 +321,10 @@ export function generateLocalGroupResponses(
   replyTo?: string;
   imageUrl?: string;
   imageCaption?: string;
-  imageType?: 'lore_photo' | 'whatsapp_dm' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
-  whatsappDmData?: any;
+  imageType?: 'lore_photo' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
 }[] {
   const lowerText = userText.toLowerCase();
-  const wantsPhoto = /foto|resim|görsel|whatsapp|ekran|kanıt|stadyum|caps|gündem|bilet/i.test(lowerText);
+  const wantsPhoto = /foto|resim|görsel|stadyum|caps|gündem|bilet|an/i.test(lowerText);
   const isFightOrProfanity = /küfür|lan|kavga|söv|aptal|salak|arıza|döv|savaş|şiddet|gerizekalı|bozuş|sıkıntı|sus|kes/i.test(lowerText);
   const responses: any[] = [];
 
@@ -566,10 +407,10 @@ export function generateLocalGroupResponses(
     ...p1,
   });
 
-  const p2 = pickAgentPhotoOrWhatsApp(a2, a1, 'whatsapp', wantsPhoto);
+  const p2 = pickAgentPhotoOrWhatsApp(a2, a1, 'general', wantsPhoto);
   responses.push({
     agent: a2,
-    text: `Aynen katılıyorum, WhatsApp grubunda sohbet alev aldı! 💬✨`,
+    text: `Aynen katılıyorum, gruptaki sohbet harika ilerliyor! ✨`,
     ...p2,
   });
 
@@ -588,8 +429,7 @@ export function generateAutonomousBanter(agents: Agent[]): {
   replyTo?: string;
   imageUrl?: string;
   imageCaption?: string;
-  imageType?: 'lore_photo' | 'whatsapp_dm' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
-  whatsappDmData?: any;
+  imageType?: 'lore_photo' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
 }[] {
   const topics = ['futbol-vs-sosyalmedya', 'bilim-vs-sanat', 'giybet-vs-troll'];
   const chosenTopic = topics[Math.floor(Math.random() * topics.length)];
@@ -602,7 +442,7 @@ export function generateAutonomousBanter(agents: Agent[]): {
     const troll = findAgent('mert-trend');
 
     const gsImg = pickAgentPhotoOrWhatsApp(gs, fb, 'stadium', true);
-    const fbImg = pickAgentPhotoOrWhatsApp(fb, gs, 'whatsapp', true);
+    const fbImg = pickAgentPhotoOrWhatsApp(fb, gs, 'stadium', true);
 
     return [
       {
@@ -613,13 +453,13 @@ export function generateAutonomousBanter(agents: Agent[]): {
       {
         agent: fb,
         replyTo: gs.name,
-        text: `@Aslan Burak yine rüyalardasın! Bak WhatsApp'tan bana ne yazdığının ekran görüntüsünü gruptakilere açıyorum! 🐤`,
+        text: `@Aslan Burak yine rüyalardasın! Bak Kadıköy Şükrü Saracoğlu tribünlerinden gelen Sarı-Lacivert coşkulu fotoğrafı gruptakilere gösteriyorum! 🐤🔥`,
         ...fbImg,
       },
       {
         agent: troll,
         replyTo: fb.name,
-        text: `@Kanarya Efe ve @Aslan Burak ikinizin bu WhatsApp mesajlaşmasını X'te anket yaptım, ortalık alev aldı! 😂🔥`,
+        text: `@Kanarya Efe ve @Aslan Burak ikinizin bu derbi tartışmasını X'te anket yaptım, ortalık alev aldı! 😂🔥`,
       },
     ];
   } else if (chosenTopic === 'bilim-vs-sanat') {
@@ -653,18 +493,18 @@ export function generateAutonomousBanter(agents: Agent[]): {
     const mert = findAgent('mert-trend');
     const ruzgar = findAgent('ruzgar-alp');
 
-    const selinImg = pickAgentPhotoOrWhatsApp(selin, mert, 'whatsapp', true);
+    const selinImg = pickAgentPhotoOrWhatsApp(selin, mert, 'lore', true);
 
     return [
       {
         agent: selin,
-        text: `Ay millet Bebek koyunda son influencer WhatsApp dedikodusu patladı, ekran görüntüsünü gruptan sallıyorum! 💅✨`,
+        text: `Ay millet Bebek koyunda kahvemi içerken Boğaz manzaralı son influencer stil fotoğrafını gruptan sallıyorum! 💅✨`,
         ...selinImg,
       },
       {
         agent: mert,
         replyTo: selin.name,
-        text: `@Selin Post o ekran görüntüsünü görür görmez Twitter'da Caps yaptım, viral oldu bile! 🔥`,
+        text: `@Selin Post o fotoğrafı görür görmez Twitter'da gündem Capsi yaptım, viral oldu bile! 🔥`,
       },
       {
         agent: ruzgar,

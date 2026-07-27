@@ -22,10 +22,13 @@ import {
   Music,
   RotateCcw,
   PlusCircle,
+  Eye,
 } from 'lucide-react';
 import { generateLocalResponse } from '../utils/localEngine';
 import { saveChatMessage, getChatMessages, addMemory, clearChatHistory, saveAgent, getMemories } from '../utils/storage';
 import { REACTION_CLIPS, playReactionClip, speakTextTurkish, ReactionClip } from '../utils/soundBank';
+import { AgentOverlayCard } from './AgentOverlayCard';
+import { generateNanoBananaImage } from '../utils/nanoBananaEngine';
 
 interface ChatViewProps {
   agent: Agent;
@@ -53,6 +56,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [lastPlayedClip, setLastPlayedClip] = useState<string | null>(null);
   const [showClearModal, setShowClearModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showOverlayCard, setShowOverlayCard] = useState(false);
+  const [overlayMessageText, setOverlayMessageText] = useState('');
+  const [autoDevScene, setAutoDevScene] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load chat history on agent change
@@ -161,14 +167,20 @@ export const ChatView: React.FC<ChatViewProps> = ({
     if (engineMode === 'hybrid' || engineMode === 'groq') {
       try {
         const storedGroqKey = localStorage.getItem('xasil_groq_api_key') || '';
+        const storedGeminiKeys = localStorage.getItem('xasil_gemini_keys') || '';
         const res = await fetch('/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-gemini-keys': storedGeminiKeys,
+            'x-groq-api-key': storedGroqKey,
+          },
           body: JSON.stringify({
             agent,
             userMessage: text,
             chatHistory: updated,
             groqApiKey: storedGroqKey,
+            geminiKeys: storedGeminiKeys ? JSON.parse(storedGeminiKeys) : [],
             engineMode: engineMode,
           }),
         });
@@ -207,6 +219,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
       }
     }
 
+    const wantsPhoto = /selfie|foto|resim|görsel|yüzünü göster|nasıl görünüyorsun/i.test(text) || (replyText && replyText.includes('[SELFIE_REQUESTED]'));
+    if (wantsPhoto || mediaUrl) {
+      try {
+        const nanoRes = await generateNanoBananaImage({
+          prompt: text || `${agent.name} selfie fotoğrafı`,
+          topic: text,
+          agentName: agent.name,
+        });
+        mediaUrl = nanoRes.imageUrl;
+        mediaType = 'image';
+      } catch (e) {}
+    }
+
     setTimeout(() => {
       setIsTyping(false);
 
@@ -223,6 +248,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       const finalHistory = saveChatMessage(agent.id, agentMsg);
       setMessages(finalHistory);
+
+      // Open Cinematic Large Agent Overlay Card automatically for agent replies if enabled
+      if (autoDevScene) {
+        setOverlayMessageText(replyText);
+        setShowOverlayCard(true);
+      }
 
       const newXp = (agent.xp || 0) + xpGained;
       let newTitle = agent.relationshipTitle || 'Yeni Tanışılan';
@@ -381,6 +412,32 @@ export const ChatView: React.FC<ChatViewProps> = ({
             {autoSpeech ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
+          <div className="flex items-center gap-1 bg-amber-950/40 p-1 rounded-xl border border-amber-500/30">
+            <button
+              onClick={() => {
+                const lastAgentMsg = [...messages].reverse().find(m => m.sender === 'agent');
+                setOverlayMessageText(lastAgentMsg ? lastAgentMsg.text : agent.greeting);
+                setShowOverlayCard(true);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:scale-105"
+              title="Ajan Karakterini Görseldeki Gibi Sahneye Çıkar"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>🎭 Karakter Sahnesi</span>
+            </button>
+            <button
+              onClick={() => setAutoDevScene(!autoDevScene)}
+              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                autoDevScene
+                  ? 'bg-amber-400 text-black border-amber-300 font-extrabold'
+                  : 'bg-white/5 text-gray-400 border-white/10'
+              }`}
+              title="Mesaj Geldiğinde Karakter Sahnesini Otomatik Aç/Kapat"
+            >
+              {autoDevScene ? 'Oto: AÇIK' : 'Oto: KAPALI'}
+            </button>
+          </div>
+
           <button
             onClick={() => setShowClearModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 hover:scale-105"
@@ -522,6 +579,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       alt="Ajan Selfie"
                       className="w-full max-h-60 object-cover group-hover:scale-105 transition-transform"
                     />
+                    <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-[10px] font-black border border-yellow-200 flex items-center gap-1 shadow-xl animate-pulse z-10">
+                      <Sparkles className="w-3 h-3 text-black" />
+                      <span>Nano Banana Pro AI</span>
+                    </div>
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                       <Maximize2 className="w-6 h-6 text-white" />
                     </div>
@@ -539,17 +600,30 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 )}
               </div>
 
-              {/* Timestamp & Speak Action */}
+              {/* Timestamp & Actions */}
               <div className={`flex items-center gap-2 text-[10px] text-gray-500 px-1 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
                 <span>{msg.timestamp}</span>
                 {msg.sender === 'agent' && (
-                  <button
-                    onClick={() => speakTextTurkish(msg.text)}
-                    className="hover:text-white transition-colors cursor-pointer"
-                    title="Seslendir"
-                  >
-                    <Volume2 className="w-3 h-3" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => speakTextTurkish(msg.text)}
+                      className="hover:text-white transition-colors cursor-pointer"
+                      title="Seslendir"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setOverlayMessageText(msg.text);
+                        setShowOverlayCard(true);
+                      }}
+                      className="hover:text-cyan-300 text-cyan-400/80 transition-colors cursor-pointer flex items-center gap-1 font-bold"
+                      title="Büyük Sinematik Sahne Kartında Aç"
+                    >
+                      <Sparkles className="w-3 h-3 text-cyan-400" />
+                      <span>Büyük Kart</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -687,6 +761,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         </div>
       )}
+      {/* Large Agent Cinematic Overlay Card */}
+      <AgentOverlayCard
+        isOpen={showOverlayCard}
+        agent={agent}
+        messageText={overlayMessageText || agent.greeting}
+        onClose={() => setShowOverlayCard(false)}
+        accentHex={accentHex}
+        autoSpeak={autoSpeech}
+      />
     </div>
   );
 };

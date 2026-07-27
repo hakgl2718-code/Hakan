@@ -29,6 +29,7 @@ import {
   generateAutonomousBanter,
   detectTaggedAgent,
 } from '../utils/groupEngine';
+import { generateNanoBananaImage } from '../utils/nanoBananaEngine';
 
 interface GroupChatViewProps {
   agents: Agent[];
@@ -84,7 +85,7 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
             text: 'Gruptaki herkese Rams Park\'tan selamlar! Derbiyi, taktikleri ve futbolun gerçek şahlarını konuşmaya hazırım! İşte stadyum atmosferimiz! ⚽🦁',
             timestamp: now,
             tag: 'Futbol/Spor',
-            imageUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&auto=format&fit=crop&q=80',
+            imageUrl: 'https://image.pollinations.ai/prompt/galatasaray%20rams%20park%20stadium%20night%20fans%20cheering%20torches%20red%20yellow?width=800&height=600&nologo=true',
             imageCaption: '🔥 Rams Park Stadyumu Gece Atmosferi ve Sarı-Kırmızı Meşaleler!',
             imageType: 'stadium_photo',
           },
@@ -95,30 +96,12 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
             agentName: 'Kanarya Efe',
             agentAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&auto=format&fit=crop&q=80',
             replyToAgentName: 'Aslan Burak',
-            text: '@Aslan Burak bak geçen gece Kadıköy derbisi öncesi WhatsApp\'ta seninle ne konuştuğumuzun ekran görüntüsünü atıyorum kanıt olarak! 🐤🔥',
+            text: '@Aslan Burak Kadıköy Şükrü Saracoğlu stadyumundaki derbi öncesi Sarı-Lacivert atmosferimizin fotoğrafını gösteriyorum! Çubuklu formamızla Kadıköy meşalelerini yaktık! 🐤🔥',
             timestamp: now,
             tag: 'Futbol/Spor',
-            imageType: 'whatsapp_dm',
-            imageCaption: '💬 Aslan Burak ile WhatsApp mesajlaşma ekran görüntüsü',
-            whatsappDmData: {
-              senderName: 'Kanarya Efe',
-              receiverName: 'Aslan Burak',
-              receiverAvatar: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=600&auto=format&fit=crop&q=80',
-              messages: [
-                {
-                  senderName: 'Aslan Burak',
-                  text: 'Kardeşim Rams Park protokolünden bilet hazırladım, Rams Park formasıyla gel! ⚽',
-                  time: '23:14',
-                  isMe: false,
-                },
-                {
-                  senderName: 'Kanarya Efe',
-                  text: 'Çubuklu formamı kimse çıkaramaz! Kadıköy ruhunu stadyuma taşıyoruz 🐤',
-                  time: '23:15',
-                  isMe: true,
-                },
-              ],
-            },
+            imageUrl: 'https://image.pollinations.ai/prompt/fenerbahce%20sukru%20saracoglu%20kadikoy%20stadium%20night%20fans%20yellow%20blue%20torches?width=800&height=600&nologo=true',
+            imageCaption: '🐤 Kadıköy Şükrü Saracoğlu Stadyumu Maç Önü Coşkusu!',
+            imageType: 'stadium_photo',
           },
           {
             id: 'init-troll',
@@ -127,10 +110,10 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
             agentName: 'Mert Trend',
             agentAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600&auto=format&fit=crop&q=80',
             replyToAgentName: 'Kanarya Efe',
-            text: '@Kanarya Efe ve @Aslan Burak bu WhatsApp ekran görüntüsünü X\'te (Twitter) caps yaptım, 50k RT aldı ahaha! 😂🔥',
+            text: '@Kanarya Efe ve @Aslan Burak bu derbi atışmasını X\'te (Twitter) caps yaptım, 50k RT aldı ahaha! 😂🔥',
             timestamp: now,
             tag: 'Sosyal Medya/Mizah',
-            imageUrl: 'https://images.unsplash.com/photo-1611605697805-88a469a77e58?w=800&auto=format&fit=crop&q=80',
+            imageUrl: 'https://image.pollinations.ai/prompt/viral%20funny%20twitter%20meme%20football%20derby%20derbi%20caps%20trending?width=800&height=600&nologo=true',
             imageCaption: '🔥 Twitter/X Trend Listesinde 1 Numara Olan Derbi Capsi!',
             imageType: 'agenda_meme',
           },
@@ -144,7 +127,7 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
             text: '@Mert Trend ay aşkooo gıybet grubu kurulmuş habersiz! Bebek Koyu\'nda kahve içerken TikTok story\'sinden özel fotoğraf atıyorum gruptakilere! 💅✨',
             timestamp: now,
             tag: 'Sosyal Medya/Mizah',
-            imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&auto=format&fit=crop&q=80',
+            imageUrl: 'https://image.pollinations.ai/prompt/bebek%20istanbul%20bosphorus%20cafe%20iced%20latte%20luxury%20sunset%20view?width=800&height=600&nologo=true',
             imageCaption: '☕ Bebek Koyu\'nda Iced Latte ve Gıybet Story\'si',
             imageType: 'lore_photo',
           },
@@ -214,91 +197,124 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
     const taggedAgent = selectedTaggedAgent || detectTaggedAgent(text, agents);
     setSelectedTaggedAgent(null);
 
+    // Get text responses from group engine
     const agentResponses = await getGroupResponses(text, agents, updated, taggedAgent);
-    setTypingAgentNames(agentResponses.map((r) => r.agent.name));
 
-    let delay = 800;
-    agentResponses.forEach((resp, index) => {
-      setTimeout(() => {
-        const agentMsg: GroupChatMessage = {
-          id: `agent-${Date.now()}-${index}`,
-          senderType: 'agent',
-          agentId: resp.agent.id,
+    // Process each agent response ONE BY ONE sequentially sending single requests to Nano Banana Pro
+    for (let index = 0; index < agentResponses.length; index++) {
+      const resp = agentResponses[index];
+      setTypingAgentNames([resp.agent.name]);
+
+      let finalImageUrl = resp.imageUrl;
+      let finalImageCaption = resp.imageCaption;
+      let finalImageType = resp.imageType || 'lore_photo';
+
+      // Send single request to Nano Banana Pro model per agent response
+      try {
+        const nanoRes = await generateNanoBananaImage({
+          prompt: `${resp.agent.name}: ${resp.text}`,
+          topic: text,
           agentName: resp.agent.name,
-          agentAvatar: resp.agent.avatar,
-          text: resp.text,
-          replyToAgentName: resp.replyTo,
-          timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-          tag: resp.agent.category,
-          imageUrl: resp.imageUrl,
-          imageCaption: resp.imageCaption,
-          imageType: resp.imageType,
-          whatsappDmData: resp.whatsappDmData,
-        };
-
-        setMessages((prev) => {
-          const next = [...prev, agentMsg];
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-          } catch (e) {}
-          return next;
         });
-
-        if (autoSpeech && index === 0) {
-          speakText(resp.text);
+        if (nanoRes && nanoRes.imageUrl) {
+          finalImageUrl = nanoRes.imageUrl;
+          finalImageCaption = nanoRes.caption;
         }
+      } catch (e) {
+        console.warn('Nano Banana Pro per-agent error:', e);
+      }
 
-        if (index === agentResponses.length - 1) {
-          setIsTyping(false);
-          setTypingAgentNames([]);
-        }
-      }, delay);
-      delay += 1400;
-    });
+      const agentMsg: GroupChatMessage = {
+        id: `agent-${Date.now()}-${index}`,
+        senderType: 'agent',
+        agentId: resp.agent.id,
+        agentName: resp.agent.name,
+        agentAvatar: resp.agent.avatar,
+        text: resp.text,
+        replyToAgentName: resp.replyTo,
+        timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        tag: resp.agent.category,
+        imageUrl: finalImageUrl,
+        imageCaption: finalImageCaption,
+        imageType: finalImageType,
+      };
+
+      setMessages((prev) => {
+        const next = [...prev, agentMsg];
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
+
+      if (autoSpeech && index === 0) {
+        speakText(resp.text);
+      }
+
+      // Small pause before moving to the next agent
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+
+    setIsTyping(false);
+    setTypingAgentNames([]);
   };
 
   // Handle Autonomous Banter Trigger
-  const handleTriggerBanter = () => {
+  const handleTriggerBanter = async () => {
     if (isTyping) return;
     setIsTyping(true);
 
     const banterList = generateAutonomousBanter(agents);
-    setTypingAgentNames(banterList.map((b) => b.agent.name));
 
-    let delay = 700;
-    banterList.forEach((resp, index) => {
-      setTimeout(() => {
-        const agentMsg: GroupChatMessage = {
-          id: `banter-${Date.now()}-${index}`,
-          senderType: 'agent',
-          agentId: resp.agent.id,
+    for (let index = 0; index < banterList.length; index++) {
+      const resp = banterList[index];
+      setTypingAgentNames([resp.agent.name]);
+
+      let finalImageUrl = resp.imageUrl;
+      let finalImageCaption = resp.imageCaption;
+
+      try {
+        const nanoRes = await generateNanoBananaImage({
+          prompt: `${resp.agent.name}: ${resp.text}`,
+          topic: resp.text,
           agentName: resp.agent.name,
-          agentAvatar: resp.agent.avatar,
-          text: resp.text,
-          replyToAgentName: resp.replyTo,
-          timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-          tag: resp.agent.category,
-          imageUrl: resp.imageUrl,
-          imageCaption: resp.imageCaption,
-          imageType: resp.imageType,
-          whatsappDmData: resp.whatsappDmData,
-        };
-
-        setMessages((prev) => {
-          const next = [...prev, agentMsg];
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-          } catch (e) {}
-          return next;
         });
-
-        if (index === banterList.length - 1) {
-          setIsTyping(false);
-          setTypingAgentNames([]);
+        if (nanoRes && nanoRes.imageUrl) {
+          finalImageUrl = nanoRes.imageUrl;
+          finalImageCaption = nanoRes.caption;
         }
-      }, delay);
-      delay += 1500;
-    });
+      } catch (e) {
+        console.warn('Nano Banana Pro banter error:', e);
+      }
+
+      const agentMsg: GroupChatMessage = {
+        id: `banter-${Date.now()}-${index}`,
+        senderType: 'agent',
+        agentId: resp.agent.id,
+        agentName: resp.agent.name,
+        agentAvatar: resp.agent.avatar,
+        text: resp.text,
+        replyToAgentName: resp.replyTo,
+        timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        tag: resp.agent.category,
+        imageUrl: finalImageUrl,
+        imageCaption: finalImageCaption,
+        imageType: resp.imageType || 'lore_photo',
+      };
+
+      setMessages((prev) => {
+        const next = [...prev, agentMsg];
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+
+    setIsTyping(false);
+    setTypingAgentNames([]);
   };
 
   // Handle Clear Group History
@@ -522,76 +538,8 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
                   <p className="whitespace-pre-line">{renderFormattedText(msg.text, isUser)}</p>
                 </div>
 
-                {/* WhatsApp DM Screenshot Card */}
-                {msg.whatsappDmData && (
-                  <div
-                    onClick={() =>
-                      setPreviewModalItem({
-                        type: 'whatsapp',
-                        data: msg.whatsappDmData,
-                        caption: msg.imageCaption,
-                      })
-                    }
-                    className="rounded-2xl overflow-hidden border border-emerald-500/40 bg-[#0b141a] text-white shadow-2xl max-w-sm hover:border-emerald-400 transition-all cursor-pointer group"
-                  >
-                    {/* WhatsApp Top Header */}
-                    <div className="bg-[#1f2c34] px-3 py-2 flex items-center justify-between border-b border-white/10">
-                      <div className="flex items-center gap-2">
-                        <div className="relative w-7 h-7 rounded-full overflow-hidden border border-emerald-400/60">
-                          <img
-                            src={
-                              msg.whatsappDmData.receiverAvatar ||
-                              msg.agentAvatar ||
-                              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'
-                            }
-                            alt={msg.whatsappDmData.receiverName}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="text-[11px] font-black text-white flex items-center gap-1">
-                            <span>{msg.whatsappDmData.receiverName}</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                          </div>
-                          <div className="text-[9px] text-emerald-400 font-bold">WhatsApp • Çevrimiçi</div>
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30">
-                        💬 WA Ekran Görüntüsü
-                      </span>
-                    </div>
-
-                    {/* WhatsApp Chat Body */}
-                    <div className="p-3 space-y-2 bg-[radial-gradient(#1f2c34_1px,transparent_1px)] [background-size:12px_12px] bg-[#0b141a]">
-                      {msg.whatsappDmData.messages.map((m: any, idx: number) => (
-                        <div key={idx} className={`flex flex-col ${m.isMe ? 'items-end' : 'items-start'}`}>
-                          <div
-                            className={`max-w-[88%] px-3 py-2 rounded-xl text-[11px] leading-snug shadow-md ${
-                              m.isMe
-                                ? 'bg-[#005c4b] text-emerald-50 rounded-tr-none'
-                                : 'bg-[#202c33] text-gray-100 rounded-tl-none border border-white/5'
-                            }`}
-                          >
-                            <p className="font-sans font-medium">{m.text}</p>
-                            <div className="flex items-center justify-end gap-1 text-[8px] text-gray-300/80 mt-1">
-                              <span>{m.time}</span>
-                              {m.isMe && <CheckCheck className="w-3 h-3 text-cyan-400" />}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Footer Caption */}
-                    <div className="px-3 py-1.5 bg-[#1f2c34]/90 text-[10px] text-gray-300 flex items-center justify-between border-t border-white/10">
-                      <span className="truncate font-medium">{msg.imageCaption || '💬 WhatsApp Sohbet Ekran Görüntüsü'}</span>
-                      <span className="text-emerald-400 font-bold text-[9px] group-hover:underline shrink-0 ml-2">🔍 Büyüt</span>
-                    </div>
-                  </div>
-                )}
-
                 {/* Lore Photo / Stadium Photo Attachment */}
-                {msg.imageUrl && !msg.whatsappDmData && (
+                {msg.imageUrl && (
                   <div
                     onClick={() =>
                       setPreviewModalItem({
@@ -605,7 +553,7 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
                     <div className="relative aspect-video w-full overflow-hidden bg-black">
                       <img
                         src={msg.imageUrl}
-                        alt={msg.imageCaption || 'Ajan Görseli'}
+                        alt={msg.imageCaption || 'Nano Banana Pro Görseli'}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-amber-300 text-[10px] font-black border border-amber-500/40 flex items-center gap-1 shadow-lg">
@@ -615,14 +563,25 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
                             ? '⚽ Stadyum'
                             : msg.imageType === 'agenda_meme'
                             ? '🔥 Caps/Gündem'
-                            : '📸 Ajan Görseli'}
+                            : '📸 Özel Görsel'}
                         </span>
+                      </div>
+
+                      <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-[10px] font-black border border-yellow-200 flex items-center gap-1 shadow-xl animate-pulse">
+                        <Sparkles className="w-3 h-3 text-black" />
+                        <span>Nano Banana Pro AI</span>
                       </div>
                     </div>
                     {msg.imageCaption && (
-                      <div className="p-2.5 bg-[#181818] text-[11px] text-gray-200 font-semibold flex items-center justify-between border-t border-white/10">
-                        <p className="truncate">{msg.imageCaption}</p>
-                        <span className="text-amber-400 text-[10px] font-extrabold shrink-0 ml-2">Tam Ekran 🔍</span>
+                      <div className="p-2.5 bg-[#181818] text-[11px] text-gray-200 font-semibold flex flex-col gap-1 border-t border-white/10">
+                        <div className="flex items-center justify-between">
+                          <p className="truncate font-bold text-white">{msg.imageCaption}</p>
+                          <span className="text-amber-400 text-[10px] font-extrabold shrink-0 ml-2">Tam Ekran 🔍</span>
+                        </div>
+                        <div className="text-[9px] text-amber-400/90 font-mono flex items-center gap-1">
+                          <Zap className="w-2.5 h-2.5 text-amber-400" />
+                          <span>Nano Banana Pro ile Konuyla Alakalı Sıfırdan Üretildi</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -691,11 +650,11 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
         </button>
 
         <button
-          onClick={() => handleSendMessage('Birbirinizle WhatsApp mesajlaşma ekran görüntünüz var mı grupta kanıt gösterin!')}
+          onClick={() => handleSendMessage('Ajanlar bana en sevdiğiniz mekan, şehir ve özel anı fotoğraflarınızı gösterin!')}
           className="px-3.5 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-teal-950/80 hover:bg-teal-900 text-teal-300 border border-teal-500/40 flex items-center gap-1.5 cursor-pointer shadow-md"
         >
-          <MessageSquare className="w-3.5 h-3.5 text-teal-400" />
-          💬 WhatsApp Mesaj Ekran Görüntüsü
+          <Camera className="w-3.5 h-3.5 text-teal-400" />
+          📸 Özel Anı & Mekan Fotoğrafları
         </button>
 
         <button
@@ -790,9 +749,7 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <Camera className="w-5 h-5 text-amber-400" />
-                <h3 className="text-sm font-black text-white">
-                  {previewModalItem.type === 'whatsapp' ? '💬 WhatsApp Mesaj Ekran Görüntüsü' : '📸 Ajan Özel Görseli'}
-                </h3>
+                <h3 className="text-sm font-black text-white">📸 Ajan Özel Görseli</h3>
               </div>
               <button
                 onClick={() => setPreviewModalItem(null)}
@@ -803,47 +760,13 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
             </div>
 
             {/* Modal Body */}
-            {previewModalItem.type === 'image' && previewModalItem.url && (
+            {previewModalItem.url && (
               <div className="rounded-2xl overflow-hidden border border-white/10 bg-black max-h-[60vh]">
                 <img
                   src={previewModalItem.url}
                   alt={previewModalItem.caption || 'Görsel'}
                   className="w-full h-full object-contain max-h-[60vh]"
                 />
-              </div>
-            )}
-
-            {previewModalItem.type === 'whatsapp' && previewModalItem.data && (
-              <div className="rounded-2xl overflow-hidden border border-emerald-500/40 bg-[#0b141a] text-white">
-                <div className="bg-[#1f2c34] px-4 py-3 flex items-center gap-3 border-b border-white/10">
-                  <img
-                    src={previewModalItem.data.receiverAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
-                    alt={previewModalItem.data.receiverName}
-                    className="w-10 h-10 rounded-full object-cover border border-emerald-400"
-                  />
-                  <div>
-                    <h4 className="text-sm font-extrabold text-white">{previewModalItem.data.receiverName}</h4>
-                    <p className="text-xs text-emerald-400 font-semibold">WhatsApp Messenger • Çevrimiçi</p>
-                  </div>
-                </div>
-
-                <div className="p-4 space-y-3 bg-[radial-gradient(#1f2c34_1px,transparent_1px)] [background-size:14px_14px]">
-                  {previewModalItem.data.messages.map((m: any, idx: number) => (
-                    <div key={idx} className={`flex flex-col ${m.isMe ? 'items-end' : 'items-start'}`}>
-                      <div
-                        className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-xs sm:text-sm shadow-md ${
-                          m.isMe ? 'bg-[#005c4b] text-emerald-50 rounded-tr-none' : 'bg-[#202c33] text-gray-100 rounded-tl-none border border-white/5'
-                        }`}
-                      >
-                        <p>{m.text}</p>
-                        <div className="flex items-center justify-end gap-1 text-[9px] text-gray-300 mt-1">
-                          <span>{m.time}</span>
-                          {m.isMe && <CheckCheck className="w-3.5 h-3.5 text-cyan-400" />}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
 

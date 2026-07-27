@@ -110,11 +110,5 @@ export interface GroupChatMessage {
   tag?: string;
   imageUrl?: string;
   imageCaption?: string;
-  imageType?: 'lore_photo' | 'whatsapp_dm' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
-  whatsappDmData?: {
-    senderName: string;
-    receiverName: string;
-    receiverAvatar?: string;
-    messages: { senderName: string; text: string; time: string; isMe: boolean }[];
-  };
+  imageType?: 'lore_photo' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
 }

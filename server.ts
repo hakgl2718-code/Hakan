@@ -3,36 +3,206 @@ import path from 'path';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 
+let serverInMemoryKeys: string[] = [];
+
+function extractGeminiKeysFromReq(req: express.Request): string[] {
+  const keys: string[] = [];
+
+  const headerKeys = req.headers['x-gemini-keys'];
+  if (headerKeys) {
+    try {
+      const parsed = typeof headerKeys === 'string' && headerKeys.startsWith('[')
+        ? JSON.parse(headerKeys)
+        : String(headerKeys).split(',');
+      if (Array.isArray(parsed)) {
+        for (const k of parsed) {
+          if (typeof k === 'string' && k.trim()) keys.push(k.trim());
+        }
+      }
+    } catch (e) {
+      if (typeof headerKeys === 'string' && headerKeys.trim()) {
+        keys.push(headerKeys.trim());
+      }
+    }
+  }
+
+  if (req.body && Array.isArray(req.body.geminiKeys)) {
+    for (const k of req.body.geminiKeys) {
+      if (typeof k === 'string' && k.trim()) keys.push(k.trim());
+    }
+  }
+
+  for (const k of serverInMemoryKeys) {
+    if (k && !keys.includes(k)) keys.push(k);
+  }
+
+  const envKeys = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY_4,
+    process.env.GEMINI_API_KEY_5,
+  ];
+  for (const envK of envKeys) {
+    if (envK && typeof envK === 'string' && envK.trim() && !keys.includes(envK.trim())) {
+      keys.push(envK.trim());
+    }
+  }
+
+  const validKeys = [...new Set(keys)].filter((k) => k.length > 5);
+  // Rastgele (Randomized) Yük Dengeleme: Trafik sıkışmasını önlemek için rastgele karıştır
+  return validKeys.sort(() => Math.random() - 0.5);
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json({ limit: '10mb' }));
 
-  // Initialize Gemini AI Client lazily or safely
-  const getGenAI = () => {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return null;
-    return new GoogleGenAI({
-      apiKey: apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-  };
-
-  // 1. Health check
+  // 1. Health check & Key Management
   app.get('/api/health', (req, res) => {
     res.json({
       status: 'ok',
-      hasApiKey: Boolean(process.env.GEMINI_API_KEY),
+      hasApiKey: Boolean(process.env.GEMINI_API_KEY) || serverInMemoryKeys.length > 0,
+      customKeysCount: serverInMemoryKeys.length,
       app: 'XASİL Sohbet Ajanları Server',
     });
   });
 
-  // 2. Chat endpoint with server-side Gemini & Groq Llama 3 API + fallback
+  app.post('/api/keys', (req, res) => {
+    const { keys } = req.body || {};
+    if (Array.isArray(keys)) {
+      serverInMemoryKeys = keys.map((k) => String(k).trim()).filter((k) => k.length > 0);
+      return res.json({ success: true, count: serverInMemoryKeys.length });
+    }
+    return res.status(400).json({ error: 'Geçersiz anahtar listesi' });
+  });
+
+  app.get('/api/keys', (req, res) => {
+    return res.json({
+      keyCount: serverInMemoryKeys.length,
+      status: serverInMemoryKeys.length > 0 ? 'active' : 'idle',
+    });
+  });
+
+  // Nano Banana Pro AI Image Generation Endpoint
+  app.post('/api/generate-image', async (req, res) => {
+    try {
+      const { prompt, topic, agentName, style } = req.body || {};
+
+      if (!prompt) {
+        return res.status(400).json({ error: 'Prompt parametresi zorunludur' });
+      }
+
+      const geminiCandidateKeys = extractGeminiKeysFromReq(req);
+      const geminiModelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+      let enhancedPrompt = `Photorealistic 4k image of ${prompt}, highly detailed, cinematic lighting`;
+      let caption = `✨ Nano Banana Pro: ${prompt}`;
+
+      // Step 1: Use Gemini to expand into an English visual prompt
+      if (geminiCandidateKeys.length > 0) {
+        let expanded = false;
+        for (const currentKey of geminiCandidateKeys) {
+          if (expanded) break;
+          try {
+            const ai = new GoogleGenAI({ apiKey: currentKey });
+            for (const modelName of geminiModelsToTry) {
+              try {
+                const response = await ai.models.generateContent({
+                  model: modelName,
+                  contents: `Sen Nano Banana Pro AI Görsel Mühendisisin. Aşağıdaki Türkçe görsel isteğini son derece detaylı, yüksek kaliteli, fotogerçekçi İngilizce bir görsel promptuna ve kısa Türkçe bir altyazıya dönüştür.
+Ajan: ${agentName || 'Ajan'}
+İstek: ${prompt}
+Konu: ${topic || 'Genel'}
+Stil: ${style || 'cinematic 4k, photorealistic'}
+
+Sadece geçerli bir JSON yanıt ver:
+{
+  "enhancedPrompt": "vivid detailed english image prompt for 8k photograph...",
+  "caption": "Kısa Türkçe görsel altyazısı"
+}`,
+                  config: {
+                    responseMimeType: 'application/json',
+                    temperature: 0.7,
+                  },
+                });
+
+                if (response.text) {
+                  const parsed = JSON.parse(response.text.trim());
+                  if (parsed.enhancedPrompt) enhancedPrompt = parsed.enhancedPrompt;
+                  if (parsed.caption) caption = parsed.caption;
+                  expanded = true;
+                  break;
+                }
+              } catch (e) {
+                // Silently try next model
+              }
+            }
+          } catch (e) {
+            // Silently try next key
+          }
+        }
+      }
+
+      // Step 2: Try Imagen 3 generation with GoogleGenAI
+      if (geminiCandidateKeys.length > 0) {
+        let generated = false;
+        const imagenModels = ['imagen-3.0-generate-002', 'imagen-3.0-fast-generate-001', 'imagen-3.0-generate-001'];
+        for (const currentKey of geminiCandidateKeys) {
+          if (generated) break;
+          try {
+            const ai = new GoogleGenAI({ apiKey: currentKey });
+            for (const imgModel of imagenModels) {
+              try {
+                const imgRes: any = await ai.models.generateImages({
+                  model: imgModel,
+                  prompt: enhancedPrompt,
+                  config: {
+                    numberOfImages: 1,
+                    outputMimeType: 'image/jpeg',
+                    aspectRatio: '4:3',
+                  },
+                });
+
+                if (imgRes && imgRes.generatedImages && imgRes.generatedImages[0]?.image?.imageBytes) {
+                  const base64Img = `data:image/jpeg;base64,${imgRes.generatedImages[0].image.imageBytes}`;
+                  generated = true;
+                  return res.json({
+                    imageUrl: base64Img,
+                    caption: caption,
+                    prompt: enhancedPrompt,
+                    model: `Nano Banana Pro (${imgModel})`,
+                  });
+                }
+              } catch (e) {
+                // Silently try next model or fallback
+              }
+            }
+          } catch (imgErr: any) {
+            // Silently handle key or model errors
+          }
+        }
+      }
+
+      // Fallback: Pollinations Flux Engine for dynamic high quality visual generation from scratch
+      const seed = Math.floor(Math.random() * 1000000);
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=800&height=600&nologo=true&seed=${seed}&model=flux`;
+
+      return res.json({
+        imageUrl: pollinationsUrl,
+        caption: caption,
+        prompt: enhancedPrompt,
+        model: 'Nano Banana Pro AI (Flux Engine)',
+      });
+    } catch (err: any) {
+      console.error('Express Generate Image Error:', err);
+      return res.status(500).json({ error: 'Görsel üretme hatası.' });
+    }
+  });
+
+  // 2. Chat endpoint (Gemini Flash Lite primary, fallback to Groq & Local)
   app.post('/api/chat', async (req, res) => {
     try {
       const { agent, userMessage, chatHistory, groqApiKey, engineMode } = req.body;
@@ -41,7 +211,9 @@ async function startServer() {
         return res.status(400).json({ error: 'Eksik parametreler (agent veya userMessage)' });
       }
 
-      // 1. Comprehensive System Prompt (Identity, Tone, Rules & Lore)
+      const rawUserMessage = String(userMessage).trim();
+
+      // System Prompt
       let systemInstruction = `Sen "XASİL Sohbet Ajanları" platformunda yer alan "${agent.name}" isimli özgün ve canlı yapay zeka ajanısın.
 BAŞLIK / ROL: ${agent.title || 'Asistan'}
 CİNSİYET: ${agent.gender || 'Belirtilmedi'}
@@ -55,12 +227,11 @@ TÜRKİYE KÖKENİ / HİKAYE LORE: ${agent.turkishOrigin || 'İstanbul, Türkiye
 SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
 1. Sadece ve sadece Türkçe dilinde konuşacaksın. Yanıtların son derece doğal, samimi, akıcı ve karaktere tam oturan bir Türkçeyle yazılmalıdır.
 2. Ajan kimliğinden, karakterinin hikayesinden ve belirlediğin kişilik yapısından asla çıkma.
-3. Sohbet geçmişindeki tüm mesajları dikkatle oku, bağlamı ve kullanıcının bahsettiği detayları hatırla.
-4. "Anladım, ... hakkında ne düşünüyorsunuz?" gibi basmakalıp şablon veya tekrar kalıplarını KESİNLİKLE kullanma.
+3. Kullanıcının ne yazdığına tam odaklan. Mesajın konusunu, niyetini %100 anlayarak doğrudan ona karaktere özgü yanıt ver.
+4. "Anladım, ... hakkında ne düşünüyorsunuz?", "Harika bir mesaj..." gibi basmakalıp şablon veya tekrar kalıplarını KESİNLİKLE kullanma.
 5. Kullanıcı mesajına doğrudan, akıllıca ve karaktere uygun yanıt ver.
 6. Kullanıcı senden selfie/fotoğraf istediğinde "Tabii ki! Senin için hemen bir selfie çekip gönderiyorum!" gibi coşkulu bir yanıt ver ve cümlede [SELFIE_REQUESTED] etiketi mutlaka geçsin.`;
 
-      // Special Persona Rule for Hakan - XASİL Kurucusu (Digital Twin)
       const isHakanAgent = agent.id === 'hakan-xasil' || (agent.name && agent.name.toLowerCase().includes('hakan'));
       if (isHakanAgent) {
         systemInstruction += `\n\n[HAKAN - XASİL KURUCUSU ÖZEL PERSONA & DİL KURALLARI]:
@@ -72,44 +243,103 @@ SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
 - YASAKLAR: "Harika bir mesaj...", "Anladım, ... hakkında ne düşünüyorsunuz?" gibi robotiğe kaçan, hazır şablon, ezber veya kalıp cümleleri KESİNLİKLE KULLANMA.`;
       }
 
-      // 2. Structure Messages Array with System Prompt First & Multi-Turn Chat History
-      const groqMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-        { role: 'system', content: systemInstruction }
-      ];
+      // Structure contents for Gemini AI
+      const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
 
-      // Convert chatHistory array into OpenAI/Groq role objects
       if (Array.isArray(chatHistory) && chatHistory.length > 0) {
-        // Take up to 20 past messages for rich context window
-        const historySlice = chatHistory.slice(-20);
-        
-        for (const msg of historySlice) {
+        for (const msg of chatHistory.slice(-16)) {
           if (!msg || typeof msg.text !== 'string' || !msg.text.trim()) continue;
-          
-          const isUser = msg.sender === 'user';
-          groqMessages.push({
-            role: isUser ? 'user' : 'assistant',
-            content: msg.text.trim(),
+          contents.push({
+            role: msg.sender === 'user' ? 'user' : 'model',
+            parts: [{ text: msg.text.trim() }],
           });
         }
       }
 
-      // Ensure latest user message is present as the final user message
-      const lastMsgInArray = groqMessages[groqMessages.length - 1];
-      if (!lastMsgInArray || lastMsgInArray.role !== 'user' || lastMsgInArray.content !== userMessage.trim()) {
-        groqMessages.push({
+      if (
+        contents.length === 0 ||
+        contents[contents.length - 1].role !== 'user' ||
+        contents[contents.length - 1].parts[0].text !== rawUserMessage
+      ) {
+        contents.push({
           role: 'user',
-          content: userMessage.trim(),
+          parts: [{ text: rawUserMessage }],
         });
       }
 
-      // Check Groq Llama 3 First if engineMode is 'groq' or groqApiKey is supplied
+      // PRIMARY: Try Gemini Flash Lite with key pool
+      const geminiCandidateKeys = extractGeminiKeysFromReq(req);
+      const geminiModelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+
+      if (geminiCandidateKeys.length > 0) {
+        for (const currentKey of geminiCandidateKeys) {
+          try {
+            const ai = new GoogleGenAI({
+              apiKey: currentKey,
+              httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+            });
+
+            for (const modelName of geminiModelsToTry) {
+              try {
+                const response = await ai.models.generateContent({
+                  model: modelName,
+                  contents: contents,
+                  config: {
+                    systemInstruction: systemInstruction,
+                    temperature: 0.8,
+                  },
+                });
+
+                if (response.text && response.text.trim()) {
+                  return res.json({
+                    replyText: response.text.trim(),
+                    usedEngine: 'gemini',
+                    model: modelName,
+                  });
+                }
+              } catch (modelErr: any) {
+                console.warn(`Express Gemini model error ${modelName}:`, modelErr?.message || modelErr);
+              }
+            }
+          } catch (keyErr: any) {
+            console.warn('Express Gemini key error:', keyErr?.message || keyErr);
+          }
+        }
+      }
+
+      // SECONDARY: Try Groq API
       const effectiveGroqKey = groqApiKey || req.headers['x-groq-api-key'] || process.env.GROQ_API_KEY;
-      if ((engineMode === 'groq' || effectiveGroqKey) && effectiveGroqKey) {
+      if (effectiveGroqKey) {
+        const groqMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+          { role: 'system', content: systemInstruction },
+        ];
+
+        if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+          for (const msg of chatHistory.slice(-20)) {
+            if (!msg || typeof msg.text !== 'string' || !msg.text.trim()) continue;
+            groqMessages.push({
+              role: msg.sender === 'user' ? 'user' : 'assistant',
+              content: msg.text.trim(),
+            });
+          }
+        }
+
+        if (
+          groqMessages.length === 0 ||
+          groqMessages[groqMessages.length - 1].role !== 'user' ||
+          groqMessages[groqMessages.length - 1].content !== rawUserMessage
+        ) {
+          groqMessages.push({
+            role: 'user',
+            content: rawUserMessage,
+          });
+        }
+
         const groqModelsToTry = [
           'llama-3.3-70b-versatile',
           'llama-3.1-70b-versatile',
           'llama3-70b-8192',
-          'llama-3.1-8b-instant'
+          'llama-3.1-8b-instant',
         ];
 
         for (const modelName of groqModelsToTry) {
@@ -117,7 +347,7 @@ SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
             const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${effectiveGroqKey}`,
+                Authorization: `Bearer ${effectiveGroqKey}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
@@ -137,60 +367,13 @@ SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
                   model: modelName,
                 });
               }
-            } else {
-              const errBody = await groqRes.text();
-              console.warn(`Groq model ${modelName} returned status ${groqRes.status}:`, errBody);
             }
           } catch (groqErr: any) {
-            console.warn(`Groq API call attempt failed for ${modelName}:`, groqErr.message);
+            console.warn(`Express Groq error with ${modelName}:`, groqErr.message);
           }
         }
       }
 
-      // Gemini AI Engine Fallback
-      const ai = getGenAI();
-
-      if (ai) {
-        try {
-          const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
-
-          if (Array.isArray(chatHistory) && chatHistory.length > 0) {
-            for (const msg of chatHistory.slice(-16)) {
-              if (!msg || typeof msg.text !== 'string' || !msg.text.trim()) continue;
-              contents.push({
-                role: msg.sender === 'user' ? 'user' : 'model',
-                parts: [{ text: msg.text.trim() }],
-              });
-            }
-          }
-
-          if (contents.length === 0 || contents[contents.length - 1].role !== 'user' || contents[contents.length - 1].parts[0].text !== userMessage.trim()) {
-            contents.push({
-              role: 'user',
-              parts: [{ text: userMessage.trim() }],
-            });
-          }
-
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: contents,
-            config: {
-              systemInstruction: systemInstruction,
-              temperature: 0.8,
-            },
-          });
-
-          const replyText = response.text || 'Seni duymakta ufak bir kesinti yaşadım ama buradayım!';
-          return res.json({
-            replyText,
-            usedEngine: 'gemini',
-          });
-        } catch (geminiErr: any) {
-          console.warn('Gemini API call failed, falling back to local simulation:', geminiErr.message);
-        }
-      }
-
-      // Fallback or Local engine signal
       return res.json({
         replyText: null,
         usedEngine: 'local',
@@ -201,7 +384,7 @@ SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
     }
   });
 
-  // 3. Multi-Agent Group Chat Endpoint (Context-Aware Multi-Agent Response)
+  // 3. Multi-Agent Group Chat Endpoint
   app.post('/api/group-chat', async (req, res) => {
     try {
       const { userMessage, taggedAgentName, agents, history, groqApiKey } = req.body;
@@ -216,10 +399,20 @@ SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
         .map((a: any) => `- ID: "${a.id}", İsim: "${a.name}", Rol: "${a.title}", Biyo: "${a.bio}"`)
         .join('\n');
 
+      let historyText = '';
+      if (Array.isArray(history) && history.length > 0) {
+        historyText = '\n\nSON SOHBET GEÇMİŞİ:\n' + history
+          .map((h: any) => `${h.senderName || h.agentId || 'Kullanıcı'}: ${h.text}`)
+          .join('\n');
+      }
+
       const systemPrompt = `Sen "XASİL Sohbet Ajanları" platformunun WhatsApp tarzı gürültülü, samimi ve eğlenceli grup odasını yöneten Türkçe Yapay Zeka motorusun.
 
 GRUPTAKİ AJANLAR VE KİŞİLİKLERİ:
 ${agentSummaries}
+
+KULLANICININ MESAJI: "${rawUserMessage}"
+${historyText}
 
 KESİN GRUP VE SOHBET KURALLARI:
 
@@ -258,14 +451,61 @@ KESİN GRUP VE SOHBET KURALLARI:
      ]
 `;
 
-      // 1. Try Groq API
+      // PRIMARY: Try Gemini Flash Lite with candidate key pool
+      const geminiCandidateKeys = extractGeminiKeysFromReq(req);
+      const geminiModelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+
+      if (geminiCandidateKeys.length > 0) {
+        for (const currentKey of geminiCandidateKeys) {
+          try {
+            const ai = new GoogleGenAI({
+              apiKey: currentKey,
+              httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+            });
+
+            for (const modelName of geminiModelsToTry) {
+              try {
+                const response = await ai.models.generateContent({
+                  model: modelName,
+                  contents: systemPrompt,
+                  config: {
+                    temperature: 0.9,
+                    responseMimeType: 'application/json',
+                  },
+                });
+
+                if (response.text && response.text.trim()) {
+                  const parsed = JSON.parse(response.text.trim());
+                  const finalResponses = Array.isArray(parsed)
+                    ? parsed
+                    : parsed.responses || parsed.messages || Object.values(parsed)[0];
+
+                  if (Array.isArray(finalResponses) && finalResponses.length > 0) {
+                    return res.json({
+                      responses: finalResponses,
+                      usedEngine: 'gemini',
+                      model: modelName,
+                    });
+                  }
+                }
+              } catch (modelErr: any) {
+                console.warn(`Express Group Gemini model error ${modelName}:`, modelErr?.message || modelErr);
+              }
+            }
+          } catch (keyErr: any) {
+            console.warn('Express Group Gemini key error:', keyErr?.message || keyErr);
+          }
+        }
+      }
+
+      // SECONDARY: Try Groq API
       const effectiveGroqKey = groqApiKey || req.headers['x-groq-api-key'] || process.env.GROQ_API_KEY;
       if (effectiveGroqKey) {
         const groqModelsToTry = [
           'llama-3.3-70b-versatile',
           'llama-3.1-70b-versatile',
           'llama3-70b-8192',
-          'llama-3.1-8b-instant'
+          'llama-3.1-8b-instant',
         ];
 
         for (const modelName of groqModelsToTry) {
@@ -273,18 +513,18 @@ KESİN GRUP VE SOHBET KURALLARI:
             const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${effectiveGroqKey}`,
+                Authorization: `Bearer ${effectiveGroqKey}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
                 model: modelName,
                 messages: [
                   { role: 'system', content: systemPrompt },
-                  { role: 'user', content: rawUserMessage }
+                  { role: 'user', content: rawUserMessage },
                 ],
                 temperature: 0.9,
                 max_tokens: 1024,
-                response_format: { type: 'json_object' }
+                response_format: { type: 'json_object' },
               }),
             });
 
@@ -295,16 +535,16 @@ KESİN GRUP VE SOHBET KURALLARI:
                 let parsed: any = null;
                 try {
                   const rawParsed = JSON.parse(content);
-                  parsed = Array.isArray(rawParsed) ? rawParsed : (rawParsed.responses || rawParsed.messages || Object.values(rawParsed)[0]);
-                } catch (e) {
-                  // Ignore
-                }
+                  parsed = Array.isArray(rawParsed)
+                    ? rawParsed
+                    : rawParsed.responses || rawParsed.messages || Object.values(rawParsed)[0];
+                } catch (e) {}
 
                 if (Array.isArray(parsed) && parsed.length > 0) {
                   return res.json({
                     responses: parsed,
                     usedEngine: 'groq',
-                    model: modelName
+                    model: modelName,
                   });
                 }
               }
@@ -312,35 +552,6 @@ KESİN GRUP VE SOHBET KURALLARI:
           } catch (groqErr: any) {
             console.warn(`Express Group Groq error with ${modelName}:`, groqErr.message);
           }
-        }
-      }
-
-      // 2. Try Gemini API
-      const ai = getGenAI();
-      if (ai) {
-        try {
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: systemPrompt,
-            config: {
-              temperature: 0.9,
-              responseMimeType: 'application/json',
-            },
-          });
-
-          const jsonText = response.text;
-          if (jsonText) {
-            const parsed = JSON.parse(jsonText);
-            const finalResponses = Array.isArray(parsed) ? parsed : (parsed.responses || parsed.messages);
-            if (Array.isArray(finalResponses) && finalResponses.length > 0) {
-              return res.json({
-                responses: finalResponses,
-                usedEngine: 'gemini',
-              });
-            }
-          }
-        } catch (geminiErr: any) {
-          console.warn('Group Chat Gemini call failed, falling back to local NLP:', geminiErr.message);
         }
       }
 

@@ -1,4 +1,62 @@
 import { GoogleGenAI } from '@google/genai';
+import { getStoredServerKeys } from './keys';
+
+function extractGeminiKeys(req: any): string[] {
+  const keys: string[] = [];
+
+  // 1. Header x-gemini-keys
+  const headerKeys = req.headers['x-gemini-keys'];
+  if (headerKeys) {
+    try {
+      const parsed = typeof headerKeys === 'string' && headerKeys.startsWith('[')
+        ? JSON.parse(headerKeys)
+        : String(headerKeys).split(',');
+      if (Array.isArray(parsed)) {
+        for (const k of parsed) {
+          if (typeof k === 'string' && k.trim()) keys.push(k.trim());
+        }
+      }
+    } catch (e) {
+      if (typeof headerKeys === 'string' && headerKeys.trim()) {
+        keys.push(headerKeys.trim());
+      }
+    }
+  }
+
+  // 2. Body geminiKeys
+  if (req.body && Array.isArray(req.body.geminiKeys)) {
+    for (const k of req.body.geminiKeys) {
+      if (typeof k === 'string' && k.trim()) keys.push(k.trim());
+    }
+  }
+
+  // 3. Stored server keys
+  try {
+    const stored = getStoredServerKeys();
+    for (const k of stored) {
+      if (k && !keys.includes(k)) keys.push(k);
+    }
+  } catch (e) {}
+
+  // 4. Environment GEMINI_API_KEY & GEMINI_API_KEY_1..5
+  const envKeys = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY_4,
+    process.env.GEMINI_API_KEY_5,
+  ];
+  for (const envK of envKeys) {
+    if (envK && typeof envK === 'string' && envK.trim() && !keys.includes(envK.trim())) {
+      keys.push(envK.trim());
+    }
+  }
+
+  const validKeys = [...new Set(keys)].filter((k) => k.length > 5);
+  // Rastgele (Randomized) Yük Dengeleme: Trafik sıkışmasını önlemek için rastgele karıştır
+  return validKeys.sort(() => Math.random() - 0.5);
+}
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -28,8 +86,8 @@ TÜRKİYE KÖKENİ / HİKAYE LORE: ${agent.turkishOrigin || 'İstanbul, Türkiye
 SİSTEM VE DAVRANIŞ KURALLARI:
 1. Sadece ve sadece Türkçe konuşacaksın.
 2. Ajan kimliğinden, karakterinin hikayesinden ve belirlediğin kişilik yapısından asla çıkma.
-3. Kullanıcının mesajlarına doğrudan, akıllıca ve karaktere özgü cevap ver.
-4. "Anladım, ... hakkında ne düşünüyorsunuz?" gibi basmakalıp şablon veya tekrar kalıplarını KESİNLİKLE kullanma.
+3. Kullanıcının ne yazdığına tam odaklan. Mesajın konusunu, niyetini %100 anlayarak doğrudan ona karaktere özgü yanıt ver.
+4. "Anladım, ... hakkında ne düşünüyorsunuz?", "Harika bir mesaj..." gibi basmakalıp şablon veya tekrar kalıplarını KESİNLİKLE kullanma.
 5. Kullanıcı mesajını doğrudan yanıtla, soru veya tamamlama kalıbı içine sokma.`;
 
     const isHakanAgent = agent.id === 'hakan-xasil' || (agent.name && agent.name.toLowerCase().includes('hakan'));
@@ -43,42 +101,100 @@ SİSTEM VE DAVRANIŞ KURALLARI:
 - YASAKLAR: "Harika bir mesaj...", "Anladım, ... hakkında ne düşünüyorsunuz?" gibi robotiğe kaçan, hazır şablon, ezber veya kalıp cümleleri KESİNLİKLE KULLANMA.`;
     }
 
-    // 2. Build Groq Chat Completions Payload
-    // role: "system" -> Agent persona
-    // role: "user" -> Raw user message text
-    const groqMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-      { role: 'system', content: systemInstruction }
-    ];
+    // Prepare contents for Gemini AI
+    const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
 
-    // Add chat history
     if (Array.isArray(chatHistory) && chatHistory.length > 0) {
-      const historySlice = chatHistory.slice(-20);
-      for (const msg of historySlice) {
+      for (const msg of chatHistory.slice(-16)) {
         if (!msg || typeof msg.text !== 'string' || !msg.text.trim()) continue;
-        groqMessages.push({
-          role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.text.trim(),
+        contents.push({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text.trim() }],
         });
       }
     }
 
-    // Ensure last message is RAW user message without any completion template or string wrapping
-    const lastMsgInArray = groqMessages[groqMessages.length - 1];
-    if (!lastMsgInArray || lastMsgInArray.role !== 'user' || lastMsgInArray.content !== rawUserMessage) {
-      groqMessages.push({
+    if (
+      contents.length === 0 ||
+      contents[contents.length - 1].role !== 'user' ||
+      contents[contents.length - 1].parts[0].text !== rawUserMessage
+    ) {
+      contents.push({
         role: 'user',
-        content: rawUserMessage,
+        parts: [{ text: rawUserMessage }],
       });
     }
 
-    // 3. Try Groq API
+    // 2. PRIMARY CHOICE: Gemini Key Pool Execution
+    const geminiCandidateKeys = extractGeminiKeys(req);
+    const geminiModelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+
+    if (geminiCandidateKeys.length > 0) {
+      for (const currentKey of geminiCandidateKeys) {
+        try {
+          const ai = new GoogleGenAI({ apiKey: currentKey });
+
+          for (const modelName of geminiModelsToTry) {
+            try {
+              const response = await ai.models.generateContent({
+                model: modelName,
+                contents: contents,
+                config: {
+                  systemInstruction: systemInstruction,
+                  temperature: 0.8,
+                },
+              });
+
+              if (response.text && response.text.trim()) {
+                return res.status(200).json({
+                  replyText: response.text.trim(),
+                  usedEngine: 'gemini',
+                  model: modelName,
+                });
+              }
+            } catch (modelErr: any) {
+              console.warn(`Gemini key error with model ${modelName}:`, modelErr?.message || modelErr);
+            }
+          }
+        } catch (keyErr: any) {
+          console.warn('Gemini client error with key:', keyErr?.message || keyErr);
+        }
+      }
+    }
+
+    // 3. SECONDARY FALLBACK: Groq API (if requested or configured)
     const effectiveGroqKey = groqApiKey || req.headers['x-groq-api-key'] || process.env.GROQ_API_KEY;
-    if ((engineMode === 'groq' || effectiveGroqKey) && effectiveGroqKey) {
+    if (effectiveGroqKey) {
+      const groqMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+        { role: 'system', content: systemInstruction },
+      ];
+
+      if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+        for (const msg of chatHistory.slice(-20)) {
+          if (!msg || typeof msg.text !== 'string' || !msg.text.trim()) continue;
+          groqMessages.push({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text.trim(),
+          });
+        }
+      }
+
+      if (
+        groqMessages.length === 0 ||
+        groqMessages[groqMessages.length - 1].role !== 'user' ||
+        groqMessages[groqMessages.length - 1].content !== rawUserMessage
+      ) {
+        groqMessages.push({
+          role: 'user',
+          content: rawUserMessage,
+        });
+      }
+
       const groqModelsToTry = [
         'llama-3.3-70b-versatile',
         'llama-3.1-70b-versatile',
         'llama3-70b-8192',
-        'llama-3.1-8b-instant'
+        'llama-3.1-8b-instant',
       ];
 
       for (const modelName of groqModelsToTry) {
@@ -86,7 +202,7 @@ SİSTEM VE DAVRANIŞ KURALLARI:
           const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${effectiveGroqKey}`,
+              Authorization: `Bearer ${effectiveGroqKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -110,50 +226,6 @@ SİSTEM VE DAVRANIŞ KURALLARI:
         } catch (groqErr) {
           console.warn(`Groq error with ${modelName}:`, groqErr);
         }
-      }
-    }
-
-    // 4. Gemini Fallback
-    const geminiKey = process.env.GEMINI_API_KEY;
-    if (geminiKey) {
-      try {
-        const ai = new GoogleGenAI({ apiKey: geminiKey });
-        const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
-
-        if (Array.isArray(chatHistory) && chatHistory.length > 0) {
-          for (const msg of chatHistory.slice(-16)) {
-            if (!msg || typeof msg.text !== 'string' || !msg.text.trim()) continue;
-            contents.push({
-              role: msg.sender === 'user' ? 'user' : 'model',
-              parts: [{ text: msg.text.trim() }],
-            });
-          }
-        }
-
-        if (contents.length === 0 || contents[contents.length - 1].role !== 'user' || contents[contents.length - 1].parts[0].text !== rawUserMessage) {
-          contents.push({
-            role: 'user',
-            parts: [{ text: rawUserMessage }],
-          });
-        }
-
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: contents,
-          config: {
-            systemInstruction: systemInstruction,
-            temperature: 0.8,
-          },
-        });
-
-        if (response.text) {
-          return res.status(200).json({
-            replyText: response.text,
-            usedEngine: 'gemini',
-          });
-        }
-      } catch (geminiErr) {
-        console.warn('Gemini API call failed:', geminiErr);
       }
     }
 

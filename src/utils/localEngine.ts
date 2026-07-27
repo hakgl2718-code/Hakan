@@ -68,11 +68,14 @@ export function generateLocalResponse(
 
   if (wantsSelfie) {
     emotion = 'excited';
-    mediaUrl = agent.avatar;
+    const seed = Math.floor(Math.random() * 1000000);
+    const cleanAgentName = agent.name.replace(/[^\w\s]/gi, '');
+    const selfiePrompt = `A stunning realistic portrait selfie of ${cleanAgentName}, ${agent.gender === 'Kadın' ? 'beautiful woman' : 'handsome man'}, in ${agent.turkishOrigin || 'Istanbul'}, smiling, highly detailed 8k photography, cinematic lighting`;
+    mediaUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(selfiePrompt)}?width=800&height=600&nologo=true&seed=${seed}&model=flux`;
     mediaType = 'image';
     mood = 'Heyecanlı';
     moodEmoji = '📸';
-    replyText = `İşte tam sana özel ${agent.turkishOrigin || 'İstanbul'}'dan taze çekilmiş bir selfie! 📸\n\n"${agent.selfieStyle || 'Seninle sohbet ederken gülümseyerek çekildim!'}"\n\nNasıl görünüyorum? Hoşuna gitti mi?😊`;
+    replyText = `İşte Nano Banana Pro AI ile tam sana özel ${agent.turkishOrigin || 'İstanbul'}'dan sıfırdan oluşturulan taze bir selfie! 📸\n\n"${agent.selfieStyle || 'Seninle sohbet ederken gülümseyerek çekildim!'}"\n\nNasıl görünüyorum? Hoşuna gitti mi?😊`;
     xpGained = 30;
     happiness = Math.min(100, happiness + 8);
     return {
