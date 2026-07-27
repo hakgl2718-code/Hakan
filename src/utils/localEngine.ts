@@ -137,15 +137,15 @@ export function generateLocalResponse(
     const isAggressive = lowerMsg.includes('sus') || lowerMsg.includes('kes') || lowerMsg.includes('lan') || lowerMsg.includes('yürü') || lowerMsg.includes('kapa çeneni');
 
     if (isAggressive) {
-      replyText = `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben! Lafının altında kalmam, terbiye takın ayağını denk al! ⚡🔥`;
+      replyText = `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben! Lafımın altında kalmam, terbiye takın ayağını denk al, benim masamda racon kesemezsin! ⚡🔥`;
     } else if (trimmedMsg === 'slm' || trimmedMsg === 'selam' || trimmedMsg === 'merhaba' || trimmedMsg === 'hey' || trimmedMsg === 'sa') {
       replyText = `Merhaba ben Hakan, size nasıl yardımcı olabilirim?`;
     } else if (trimmedMsg.includes('nasılsın') || trimmedMsg.includes('ne haber') || trimmedMsg.includes('naber')) {
-      replyText = `İyiyim, teşekkürler! XASİL projeleri ve siber altyapı üzerinde çalışıyorum. Siz nasılsınız?`;
+      replyText = `Merhaba ben Hakan, size nasıl yardımcı olabilirim? Teşekkürler, XASİL altyapısını geliştirmekle meşgulüm. Siz nasılsınız?`;
     } else if (trimmedMsg.includes('xasil') || trimmedMsg.includes('proje') || trimmedMsg.includes('yapay zeka') || trimmedMsg.includes('kurucu')) {
-      replyText = `XASİL, Türkiye'nin yerli yapay zeka platformudur ve kurucusu olarak projelerimizi kararlılıkla yönetiyorum. Sorunuzu alabilirim.`;
+      replyText = `Merhaba ben Hakan, size nasıl yardımcı olabilirim? XASİL, Türkiye'nin yerli yapay zeka platformudur. Kurucu olarak altyapıyı ve projeleri kararlılıkla yönetiyorum.`;
     } else {
-      replyText = `Merhaba ben Hakan, size nasıl yardımcı olabilirim? XASİL platformunda tüm projeleri kararlılıkla yönetiyoruz.`;
+      replyText = `Merhaba ben Hakan, size nasıl yardımcı olabilirim? Mesajınızı aldım, XASİL tarafında sorunuza doğrudan yardımcı olabilirim.`;
     }
 
     return {

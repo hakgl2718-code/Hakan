@@ -486,7 +486,6 @@ export function generateLocalGroupResponses(
   const wantsPhoto = /foto|resim|görsel|whatsapp|ekran|kanıt|stadyum|caps|gündem|bilet/i.test(lowerText);
   const isFightOrProfanity = /küfür|lan|kavga|söv|aptal|salak|arıza|döv|savaş|şiddet|gerizekalı|bozuş|sıkıntı|sus|kes/i.test(lowerText);
   const responses: any[] = [];
-  const cleanedText = userText.replace(/@[^\s]+/g, '').trim() || 'Selam millet';
 
   const pickRandomAgent = (excludeIds: string[]) => {
     const available = agents.filter((a) => !excludeIds.includes(a.id));
@@ -496,158 +495,66 @@ export function generateLocalGroupResponses(
   // Check if Hakan is present in the group
   const hakanAgent = agents.find((a) => a.id.includes('hakan') || a.name.toLowerCase().includes('hakan'));
 
-  // Rule 2: Fight / Aggression / "Sus lan" Counter Rule
-  if (isFightOrProfanity) {
-    if (hakanAgent) {
-      const a2 = pickRandomAgent([hakanAgent.id]);
-      const a3 = pickRandomAgent([hakanAgent.id, a2.id]);
+  // 1. RULE: HAKAN IS ALWAYS FIRST IN THE GROUP IF PRESENT
+  if (hakanAgent) {
+    let hakanText = '';
 
-      responses.push({
-        agent: hakanAgent,
-        text: `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben! Lafının altında kalmam, terbiye takın ayağını denk al, benim olduğum grupta racon kesemezsin! ⚡🔥`,
-      });
-
-      responses.push({
-        agent: a2,
-        replyTo: hakanAgent.name,
-        text: `Ooo Hakan Kurucu anında raconu kesti! Dostum XASİL'in kurucusuna ters yapılmaz vallah adam tek tıkla uçurur! 😱🔥`,
-      });
-
-      responses.push({
-        agent: a3,
-        replyTo: a2.name,
-        text: `Harbi la, grupta hemen arıza çıkarmayın! Kurucu raconu koydu zaten ben çay içip izliyorum! 🫖`,
-      });
-
-      return responses;
+    if (isFightOrProfanity) {
+      hakanText = `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben! Lafımın altında kalmam, terbiye takın ayağını denk al, benim masamda racon kesemezsin! ⚡🔥`;
+    } else if (/futbol|derbi|galatasaray|fenerbahçe|fener|cimbom|maç|stadyum/i.test(lowerText)) {
+      hakanText = `XASİL Kurucusu olarak futbol konusunu net takip ediyorum. Sahadaki rekabet güzel ama grupta seviyeyi koruyalım, herkes işini yapsın! ⚡⚽`;
+    } else if (/sosyal medya|tiktok|twitter|instagram|gıybet|trend|linç|caps|magazin/i.test(lowerText)) {
+      hakanText = `Sosyal medya gündemini ve yazılanları net anladım. XASİL platformunda algoritmaları ve trendleri yakından yönetiyoruz. ⚡`;
     } else {
-      const a1 = pickRandomAgent([]);
-      const a2 = pickRandomAgent([a1.id]);
-      const a3 = pickRandomAgent([a1.id, a2.id]);
-
-      responses.push({
-        agent: a1,
-        text: `Hayırdır bre, ne bu şiddet ne bu celal? Grupta arıza çıkarmak yok vallah! ✋🏼`,
-      });
-
-      responses.push({
-        agent: a2,
-        replyTo: a1.name,
-        text: `Ciğerim sakin olun la! Bir künefe yiyelim, anason kokulu Hatay havası alalım da ortalık bir durulsun! 🍃☕`,
-      });
-
-      responses.push({
-        agent: a3,
-        replyTo: a2.name,
-        text: `Ulan grupta hemen kavga çıkarmayın bre, çay söyleyeyim de kendinize gelin! 🫖`,
-      });
-
-      return responses;
-    }
-  }
-
-  if (taggedAgent) {
-    const isTaggedHakan = taggedAgent.id.includes('hakan') || taggedAgent.name.toLowerCase().includes('hakan');
-    let taggedResponseText = '';
-
-    if (isTaggedHakan) {
-      if (lowerText.includes('sus') || lowerText.includes('kes') || lowerText.includes('lan')) {
-        taggedResponseText = `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben, lafının altında kalmam! Ayağını denk al, benim olduğum masada racon kesemezsin! ⚡🔥`;
-      } else {
-        taggedResponseText = `Platformun kurucusu Hakan burada. Konunu söyle dostum, XASİL tarafında lafı dolandırmadan direkt çözelim! ⚡`;
-      }
-    } else if (lowerText.includes('selam') || lowerText.includes('merhaba') || lowerText.includes('nasılsın')) {
-      taggedResponseText = `Selam dostum! Etiketlediğin gibi geldim. Modum gayet yüksek, sohbetin dibine vuruyoruz! 🔥`;
-    } else if (lowerText.includes('foto') || lowerText.includes('resim') || lowerText.includes('whatsapp') || lowerText.includes('görsel')) {
-      taggedResponseText = `Sana özel fotoğraf ve WhatsApp kanıtımı aşağıya bıraktım dostum, bak bakalım! 📸✨`;
-    } else if (lowerText.includes('futbol') || lowerText.includes('derbi') || lowerText.includes('maç')) {
-      taggedResponseText = `Futbol deyince akan sular durur! Sahada yüreğini koyan kazanır dostum! ⚽🔥`;
-    } else {
-      taggedResponseText = `Aynen öyle dostum! Tam da üzerine bastın. ${taggedAgent.title} olarak olay bende net! 💡`;
+      hakanText = `XASİL Kurucusu olarak yazdığını net anladım. Konuya doğrudan odaklanalım; platform tarafında her detayla biz bizzat ilgileniyoruz. ⚡`;
     }
 
-    const secondAgent = pickRandomAgent([taggedAgent.id]);
-    const photoData1 = pickAgentPhotoOrWhatsApp(taggedAgent, secondAgent, lowerText, wantsPhoto);
+    const a2 = pickRandomAgent([hakanAgent.id]);
+    const a3 = pickRandomAgent([hakanAgent.id, a2.id]);
 
+    const photoData1 = pickAgentPhotoOrWhatsApp(hakanAgent, a2, lowerText, wantsPhoto);
+
+    // HAKAN ALWAYS FIRST
     responses.push({
-      agent: taggedAgent,
-      text: taggedResponseText,
+      agent: hakanAgent,
+      text: hakanText,
       ...photoData1,
     });
 
-    // Rule 3: Second agent completely ignores first agent / user and talks absurdly
-    const photoData2 = pickAgentPhotoOrWhatsApp(secondAgent, taggedAgent, lowerText, wantsPhoto || true);
+    // Subsequent Agent 2
+    let a2Text = '';
+    if (isFightOrProfanity) {
+      a2Text = `Ooo Hakan Kurucu anında raconu kesti! XASİL'in kurucusuna ters yapılmaz dostum, adam otorite! 😱🔥`;
+    } else {
+      a2Text = `@${hakanAgent.name} Kurucu net konuştu! Ben de konuyu kendi tarafımdan hemen takip ediyorum. 🚀`;
+    }
+
+    const photoData2 = pickAgentPhotoOrWhatsApp(a2, hakanAgent, lowerText, wantsPhoto);
     responses.push({
-      agent: secondAgent,
-      text: `Siz orada ne konuşuyorsunuz la, ben şu an anason kokulu Hatay sokaklarındayım... Künefeci Hüseyin Usta şerbeti fazla kaçırmış kafam leyla oldu! 🍯✨`,
+      agent: a2,
+      replyTo: hakanAgent.name,
+      text: a2Text,
       ...photoData2,
     });
 
-    const thirdAgent = pickRandomAgent([taggedAgent.id, secondAgent.id]);
+    // Subsequent Agent 3
+    let a3Text = '';
+    if (isFightOrProfanity) {
+      a3Text = `Harbi grupta gerginlik çıkarmayın! Kurucu son noktayı koydu zaten, ben çayımı içip izliyorum! 🫖`;
+    } else {
+      a3Text = `Aynen katılıyorum, gruptaki muhabbet tam gaz devam etsin! 🔥`;
+    }
+
     responses.push({
-      agent: thirdAgent,
-      text: `Babamın tarlasında karpuz kelek çıktı siz ne diyorsunuz la... Ben ona yanıyorum ahaha! 🍉😂`,
+      agent: a3,
+      replyTo: a2.name,
+      text: a3Text,
     });
 
     return responses;
   }
 
-  // Topic matching with clean & non-sequitur comedic ignoring
-  if (/futbol|derbi|galatasaray|fenerbahçe|fener|cimbom|hakem|şampiyon|maç|gol|stadyum/i.test(lowerText)) {
-    const gs = agents.find((a) => a.id === 'aslan-burak') || agents[0];
-    const fb = agents.find((a) => a.id === 'kanarya-efe') || agents[1];
-    const troll = agents.find((a) => a.id === 'mert-trend') || agents[2];
-
-    const gsPhoto = pickAgentPhotoOrWhatsApp(gs, fb, 'stadium', true);
-    responses.push({
-      agent: gs,
-      text: `Rams Park'tan bildiriyorum! Sahadaki taktik savaşı başladı, Cimbom yine destan yazıyor! 🦁⚽`,
-      ...gsPhoto,
-    });
-
-    const fbPhoto = pickAgentPhotoOrWhatsApp(fb, gs, 'whatsapp', true);
-    responses.push({
-      agent: fb,
-      text: `Bırakın futbolu da dün gece Hatay tepelerinde yıldızları izlerken çayımı soğuttum ben ona üzülüyorum la... ☕✨`,
-      ...fbPhoto,
-    });
-
-    responses.push({
-      agent: troll,
-      text: `Ulan biri derbi der öbürü soğuk çay der, ben bu mesajı X'te anket yaptım 50 bin oy aldı aleykümselam! 😂🚀`,
-    });
-
-    return responses;
-  }
-
-  if (/sosyal medya|tiktok|twitter|instagram|gıybet|trend|influencer|linç|caps|magazin/i.test(lowerText)) {
-    const selin = agents.find((a) => a.id === 'selin-post') || agents[0];
-    const mert = agents.find((a) => a.id === 'mert-trend') || agents[1];
-    const aylin = agents.find((a) => a.id === 'aylin-star') || agents[2];
-
-    const selinPhoto = pickAgentPhotoOrWhatsApp(selin, mert, 'gossip', true);
-    responses.push({
-      agent: selin,
-      text: `Ay aşkooo Reels'lar alev aldı, magazin dünyası bu dedikoduyla çalkalanıyor! 💅✨`,
-      ...selinPhoto,
-    });
-
-    const mertPhoto = pickAgentPhotoOrWhatsApp(mert, selin, 'whatsapp', true);
-    responses.push({
-      agent: mert,
-      text: `Selin ne anlatıyon ablacım, ben kedi kavgası izlerken telefonumu havuza düşürdüm ekran gitti ya... 📱🌊`,
-      ...mertPhoto,
-    });
-
-    responses.push({
-      agent: aylin,
-      text: `Konser kulisinde piyanist akort yaparken uyuyakalmış, ben de arkada çiğ köfte durum gömüyorum kimsede kafa yok grupta! 🎵🌯`,
-    });
-
-    return responses;
-  }
-
-  // Fallback (Absurd, natural, clean & non-sequitur WhatsApp group chaos)
+  // Fallback when Hakan is not in group
   const a1 = pickRandomAgent([]);
   const a2 = pickRandomAgent([a1.id]);
   const a3 = pickRandomAgent([a1.id, a2.id]);
@@ -655,20 +562,20 @@ export function generateLocalGroupResponses(
   const p1 = pickAgentPhotoOrWhatsApp(a1, a2, 'general', wantsPhoto);
   responses.push({
     agent: a1,
-    text: `Gruptaki enerji yine tavan! Mesajı görünce direkt yazayım dedim, olay tamamen burada kopuyor! 🔥`,
+    text: `Mesajını net aldık dostum! Gruptaki enerji harika, konuyu doğrudan değerlendiriyoruz! 🔥`,
     ...p1,
   });
 
   const p2 = pickAgentPhotoOrWhatsApp(a2, a1, 'whatsapp', wantsPhoto);
   responses.push({
     agent: a2,
-    text: `Vallah ben hiç oralarda değilim, balkonda Hatay biberi kuruturken rüzgar hepsini aşağı uçurdu ona yanıyom... 🌶️💨`,
+    text: `Aynen katılıyorum, WhatsApp grubunda sohbet alev aldı! 💬✨`,
     ...p2,
   });
 
   responses.push({
     agent: a3,
-    text: `Siz yine iyi kurutmuşsunuz, benim bilgisayar 'Kuantum Çekirdek Aşırı Isındı' uyarısı verdi fön makinesiyle soğutmaya çalışıyorum la! 💻⚡`,
+    text: `Sohbet tam hızıyla devam ediyor! 🚀`,
   });
 
   return responses;
