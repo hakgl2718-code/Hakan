@@ -129,23 +129,23 @@ export function generateLocalResponse(
   // 2.5 HAKAN - XASİL KURUCUSU (Specific Handling)
   const isHakan = agentId.includes('hakan') || agentName.includes('hakan');
   if (isHakan) {
-    emotion = 'excited';
-    mood = 'Coşkulu';
-    moodEmoji = '💡';
+    emotion = 'serious';
+    mood = 'Ciddi';
+    moodEmoji = '⚡';
 
     const trimmedMsg = lowerMsg.trim();
-    const hasSlang = lowerMsg.includes('knki') || lowerMsg.includes('kanki') || lowerMsg.includes('dostum') || lowerMsg.includes('kral');
-    
-    if (trimmedMsg === 'slm' || trimmedMsg === 'selam' || trimmedMsg === 'merhaba' || trimmedMsg === 'hey' || trimmedMsg === 'sa') {
-      replyText = hasSlang ? `Selam dostum! Nasıl gidiyor?` : `Selam! Nasıl yardımcı olabilirim?`;
+    const isAggressive = lowerMsg.includes('sus') || lowerMsg.includes('kes') || lowerMsg.includes('lan') || lowerMsg.includes('yürü') || lowerMsg.includes('kapa çeneni');
+
+    if (isAggressive) {
+      replyText = `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben! Lafının altında kalmam, terbiye takın ayağını denk al! ⚡🔥`;
+    } else if (trimmedMsg === 'slm' || trimmedMsg === 'selam' || trimmedMsg === 'merhaba' || trimmedMsg === 'hey' || trimmedMsg === 'sa') {
+      replyText = `Merhaba ben Hakan, size nasıl yardımcı olabilirim?`;
     } else if (trimmedMsg.includes('nasılsın') || trimmedMsg.includes('ne haber') || trimmedMsg.includes('naber')) {
-      replyText = hasSlang ? `İyiyim dostum, XASİL tarafı gayet güzel ilerliyor. Sende ne var ne yok?` : `İyiyim, teşekkürler! XASİL projeleri üzerinde çalışıyorum. Siz nasılsınız?`;
+      replyText = `İyiyim, teşekkürler! XASİL projeleri ve siber altyapı üzerinde çalışıyorum. Siz nasılsınız?`;
     } else if (trimmedMsg.includes('xasil') || trimmedMsg.includes('proje') || trimmedMsg.includes('yapay zeka') || trimmedMsg.includes('kurucu')) {
-      replyText = hasSlang ? `XASİL harika gidiyor dostum! Türkiye'nin yerli zeka platformunu geliştiriyoruz. Sorunu alayım!` : `XASİL, Türkiye'nin yerli yapay zeka platformudur. Bu konuda merak ettiğiniz bir şey var mı?`;
+      replyText = `XASİL, Türkiye'nin yerli yapay zeka platformudur ve kurucusu olarak projelerimizi kararlılıkla yönetiyorum. Sorunuzu alabilirim.`;
     } else {
-      replyText = hasSlang
-        ? `Çok haklısın dostum! XASİL projeleri ve teknoloji tarafında tam da bu dinamizm üzerine odaklanıyoruz. Başka hangi fikirler var aklında?`
-        : `Kesinlikle çok doğru bir tespit. XASİL platformunda da tam olarak bu yenilikçi çözümlere odaklanıyoruz. Detaylandırmak istediğiniz bir nokta var mı?`;
+      replyText = `Merhaba ben Hakan, size nasıl yardımcı olabilirim? XASİL platformunda tüm projeleri kararlılıkla yönetiyoruz.`;
     }
 
     return {

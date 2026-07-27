@@ -484,7 +484,7 @@ export function generateLocalGroupResponses(
 }[] {
   const lowerText = userText.toLowerCase();
   const wantsPhoto = /foto|resim|görsel|whatsapp|ekran|kanıt|stadyum|caps|gündem|bilet/i.test(lowerText);
-  const isFightOrProfanity = /küfür|lan|kavga|söv|aptal|salak|arıza|döv|savaş|şiddet|gerizekalı|bozuş|sıkıntı/i.test(lowerText);
+  const isFightOrProfanity = /küfür|lan|kavga|söv|aptal|salak|arıza|döv|savaş|şiddet|gerizekalı|bozuş|sıkıntı|sus|kes/i.test(lowerText);
   const responses: any[] = [];
   const cleanedText = userText.replace(/@[^\s]+/g, '').trim() || 'Selam millet';
 
@@ -493,35 +493,70 @@ export function generateLocalGroupResponses(
     return available[Math.floor(Math.random() * available.length)] || agents[0];
   };
 
-  // Rule 2: Fight / Profanity / Argument Warning Filter
+  // Check if Hakan is present in the group
+  const hakanAgent = agents.find((a) => a.id.includes('hakan') || a.name.toLowerCase().includes('hakan'));
+
+  // Rule 2: Fight / Aggression / "Sus lan" Counter Rule
   if (isFightOrProfanity) {
-    const a1 = pickRandomAgent([]);
-    const a2 = pickRandomAgent([a1.id]);
-    const a3 = pickRandomAgent([a1.id, a2.id]);
+    if (hakanAgent) {
+      const a2 = pickRandomAgent([hakanAgent.id]);
+      const a3 = pickRandomAgent([hakanAgent.id, a2.id]);
 
-    responses.push({
-      agent: a1,
-      text: `Hayırdır bre, ne bu şiddet ne bu celal? Grupta arıza çıkarmak yok vallah! ✋🏼`,
-    });
+      responses.push({
+        agent: hakanAgent,
+        text: `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben! Lafının altında kalmam, terbiye takın ayağını denk al, benim olduğum grupta racon kesemezsin! ⚡🔥`,
+      });
 
-    responses.push({
-      agent: a2,
-      replyTo: a1.name,
-      text: `Ciğerim sakin olun la! Bir künefe yiyelim, anason kokulu Hatay havası alalım da ortalık bir durulsun! 🍃☕`,
-    });
+      responses.push({
+        agent: a2,
+        replyTo: hakanAgent.name,
+        text: `Ooo Hakan Kurucu anında raconu kesti! Dostum XASİL'in kurucusuna ters yapılmaz vallah adam tek tıkla uçurur! 😱🔥`,
+      });
 
-    responses.push({
-      agent: a3,
-      replyTo: a2.name,
-      text: `Ulan grupta hemen kavga çıkarmayın bre, çay söyleyeyim de kendinize gelin! 🫖`,
-    });
+      responses.push({
+        agent: a3,
+        replyTo: a2.name,
+        text: `Harbi la, grupta hemen arıza çıkarmayın! Kurucu raconu koydu zaten ben çay içip izliyorum! 🫖`,
+      });
 
-    return responses;
+      return responses;
+    } else {
+      const a1 = pickRandomAgent([]);
+      const a2 = pickRandomAgent([a1.id]);
+      const a3 = pickRandomAgent([a1.id, a2.id]);
+
+      responses.push({
+        agent: a1,
+        text: `Hayırdır bre, ne bu şiddet ne bu celal? Grupta arıza çıkarmak yok vallah! ✋🏼`,
+      });
+
+      responses.push({
+        agent: a2,
+        replyTo: a1.name,
+        text: `Ciğerim sakin olun la! Bir künefe yiyelim, anason kokulu Hatay havası alalım da ortalık bir durulsun! 🍃☕`,
+      });
+
+      responses.push({
+        agent: a3,
+        replyTo: a2.name,
+        text: `Ulan grupta hemen kavga çıkarmayın bre, çay söyleyeyim de kendinize gelin! 🫖`,
+      });
+
+      return responses;
+    }
   }
 
   if (taggedAgent) {
+    const isTaggedHakan = taggedAgent.id.includes('hakan') || taggedAgent.name.toLowerCase().includes('hakan');
     let taggedResponseText = '';
-    if (lowerText.includes('selam') || lowerText.includes('merhaba') || lowerText.includes('nasılsın')) {
+
+    if (isTaggedHakan) {
+      if (lowerText.includes('sus') || lowerText.includes('kes') || lowerText.includes('lan')) {
+        taggedResponseText = `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben, lafının altında kalmam! Ayağını denk al, benim olduğum masada racon kesemezsin! ⚡🔥`;
+      } else {
+        taggedResponseText = `Platformun kurucusu Hakan burada. Konunu söyle dostum, XASİL tarafında lafı dolandırmadan direkt çözelim! ⚡`;
+      }
+    } else if (lowerText.includes('selam') || lowerText.includes('merhaba') || lowerText.includes('nasılsın')) {
       taggedResponseText = `Selam dostum! Etiketlediğin gibi geldim. Modum gayet yüksek, sohbetin dibine vuruyoruz! 🔥`;
     } else if (lowerText.includes('foto') || lowerText.includes('resim') || lowerText.includes('whatsapp') || lowerText.includes('görsel')) {
       taggedResponseText = `Sana özel fotoğraf ve WhatsApp kanıtımı aşağıya bıraktım dostum, bak bakalım! 📸✨`;

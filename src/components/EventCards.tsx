@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { EventScenario, Agent } from '../types';
 import { INITIAL_EVENTS } from '../data/initialEvents';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
   Play,
@@ -129,12 +130,30 @@ export const EventCards: React.FC<EventCardsProps> = ({
       </div>
 
       {/* Scenario Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map((event) => (
-          <div
-            key={event.id}
-            className="group bg-[#121212] rounded-3xl border border-white/10 hover:border-white/30 p-5 space-y-4 transition-all duration-300 shadow-xl overflow-hidden flex flex-col justify-between"
-          >
+      <motion.div
+        layout
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
+        <AnimatePresence mode="popLayout">
+          {filteredEvents.map((event, index) => (
+            <motion.div
+              key={event.id}
+              layout
+              initial={{ opacity: 0, scale: 0.88, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: -20 }}
+              transition={{
+                duration: 0.45,
+                delay: index * 0.05,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              whileHover={{
+                y: -8,
+                scale: 1.02,
+                transition: { duration: 0.25 },
+              }}
+              className="group bg-[#121212] rounded-3xl border border-white/10 hover:border-[#00D2FF]/50 p-5 space-y-4 transition-colors duration-300 shadow-xl overflow-hidden flex flex-col justify-between"
+            >
             <div className="space-y-4">
               {/* Main Banner Image with Fullscreen Zoom Trigger */}
               <div className="relative aspect-16/9 rounded-2xl overflow-hidden bg-slate-900 border border-white/10 group/img">
@@ -286,24 +305,27 @@ export const EventCards: React.FC<EventCardsProps> = ({
 
             {/* Launch Action Button */}
             <div className="pt-3 border-t border-white/10">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => handleLaunch(event)}
-                className="w-full py-3 rounded-2xl text-black font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition-all cursor-pointer"
+                className="w-full py-3 rounded-2xl text-black font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
                 style={{ backgroundColor: accentHex, boxShadow: `0 0 15px ${accentHex}40` }}
               >
                 <Play className="w-4 h-4 fill-black" />
                 Senaryoyu Başlat ({event.agentName.split(' ')[0]} ile)
-              </button>
+              </motion.button>
             </div>
-          </div>
+          </motion.div>
         ))}
+        </AnimatePresence>
 
         {filteredEvents.length === 0 && (
           <div className="col-span-full py-12 text-center bg-[#121212] rounded-3xl border border-white/10 text-gray-400 text-xs">
             Aradığınız kriterlere uygun senaryo bulunamadı.
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Lightbox Modal for Photo Preview */}
       {lightboxImage && (

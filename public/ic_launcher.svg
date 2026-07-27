@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Dark Cyber Radial Background -->
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#0a1526"/>
+      <stop offset="60%" stop-color="#040812"/>
+      <stop offset="100%" stop-color="#010307"/>
+    </radialGradient>
+
+    <!-- Neon Blue Metallic Gradient for X -->
+    <linearGradient id="neonBlueX" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#70E0FF"/>
+      <stop offset="40%" stop-color="#00F0FF"/>
+      <stop offset="100%" stop-color="#0077FF"/>
+    </linearGradient>
+
+    <!-- Neon Red Gradient for Hilal -->
+    <linearGradient id="neonRedHilal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5577"/>
+      <stop offset="100%" stop-color="#FF2A55"/>
+    </linearGradient>
+
+    <!-- Star Gold Gradient -->
+    <linearGradient id="goldStar" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0A0"/>
+      <stop offset="100%" stop-color="#FFD700"/>
+    </linearGradient>
+
+    <!-- High Intensity Cyan Outer Glow Filter -->
+    <filter id="cyanGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur1"/>
+      <feGaussianBlur stdDeviation="24" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Red Glow Filter -->
+    <filter id="redGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Pitch-Dark Cyber App Icon Container (Squircle) -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGlow)" stroke="#00F0FF" stroke-width="4" stroke-opacity="0.6"/>
+
+  <!-- Subtle Cyber Circuit Grid Background -->
+  <g stroke="#00F0FF" stroke-width="1.5" stroke-opacity="0.12" fill="none">
+    <path d="M64 128 h384 M64 256 h384 M64 384 h384"/>
+    <path d="M128 64 v384 M256 64 v384 M384 64 v384"/>
+    <!-- Circuit Nodes -->
+    <circle cx="128" cy="128" r="4" fill="#00F0FF" fill-opacity="0.3"/>
+    <circle cx="384" cy="128" r="4" fill="#00F0FF" fill-opacity="0.3"/>
+    <circle cx="128" cy="384" r="4" fill="#00F0FF" fill-opacity="0.3"/>
+    <circle cx="384" cy="384" r="4" fill="#00F0FF" fill-opacity="0.3"/>
+  </g>
+
+  <!-- Outer Cyber Tech Rotating Ring Frame -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#00F0FF" stroke-width="3" stroke-dasharray="12 18" stroke-opacity="0.5" filter="url(#cyanGlow)"/>
+  <circle cx="256" cy="256" r="195" fill="none" stroke="#00F0FF" stroke-width="1.5" stroke-dasharray="4 8" stroke-opacity="0.7"/>
+
+  <!-- Cyber Corner Badges -->
+  <circle cx="100" cy="100" r="6" fill="#00F0FF" filter="url(#cyanGlow)"/>
+  <circle cx="412" cy="100" r="6" fill="#FF2A55" filter="url(#redGlow)"/>
+  <circle cx="100" cy="412" r="6" fill="#FF2A55" filter="url(#redGlow)"/>
+  <circle cx="412" cy="412" r="6" fill="#00F0FF" filter="url(#cyanGlow)"/>
+
+  <!-- Glowing Neon-Blue Circuit-Path "X" Letter -->
+  <g filter="url(#cyanGlow)">
+    <!-- Main Left-to-Right Diagonal Line of X with Circuit Ends -->
+    <path d="M 120 120 L 392 392" stroke="url(#neonBlueX)" stroke-width="42" stroke-linecap="round"/>
+    <path d="M 120 120 L 392 392" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.9"/>
+
+    <!-- Main Right-to-Left Diagonal Line of X -->
+    <path d="M 392 120 L 120 392" stroke="url(#neonBlueX)" stroke-width="42" stroke-linecap="round"/>
+    <path d="M 392 120 L 120 392" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.9"/>
+
+    <!-- Circuit Track Detailing Traces on X -->
+    <path d="M 110 160 L 160 110" stroke="#00F0FF" stroke-width="4"/>
+    <circle cx="110" cy="160" r="6" fill="#00F0FF"/>
+    <path d="M 402 352 L 352 402" stroke="#00F0FF" stroke-width="4"/>
+    <circle cx="402" cy="352" r="6" fill="#00F0FF"/>
+
+    <path d="M 402 160 L 352 110" stroke="#00F0FF" stroke-width="4"/>
+    <circle cx="402" cy="160" r="6" fill="#00F0FF"/>
+    <path d="M 110 352 L 160 402" stroke="#00F0FF" stroke-width="4"/>
+    <circle cx="110" cy="352" r="6" fill="#00F0FF"/>
+  </g>
+
+  <!-- Heart of the "X": Integrated Glowing Neon Red Crescent & Star Emblem (Hilal-Yıldız Rozeti) -->
+  <g transform="translate(256, 256)">
+    <!-- Central Shield Glow Plate -->
+    <circle cx="0" cy="0" r="68" fill="#040208" stroke="#FF2A55" stroke-width="4" filter="url(#redGlow)"/>
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#FFD700" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.8"/>
+
+    <!-- Neon Red Crescent (Hilal) -->
+    <path d="M -8 -32 A 32 32 0 1 0 28 22 A 25 25 0 1 1 -8 -32 Z" fill="url(#neonRedHilal)" filter="url(#redGlow)"/>
+
+    <!-- Neon Gold Star (Yıldız) -->
+    <path d="M 24 -12 L 28 -2 L 39 -2 L 30 5 L 34 15 L 24 9 L 14 15 L 18 5 L 9 -2 L 20 -2 Z" fill="url(#goldStar)" filter="url(#redGlow)"/>
+  </g>
+</svg>
