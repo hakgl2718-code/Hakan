@@ -209,10 +209,11 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
       let finalImageCaption = resp.imageCaption;
       let finalImageType = resp.imageType || 'lore_photo';
 
-      // Send single request to Nano Banana Pro model per agent response
+      // Send single request to Nano Banana Pro model per agent response with a clean visual scene prompt
       try {
+        const visualScenePrompt = `${resp.agent.name} ${resp.agent.category || 'cyberpunk'} character aesthetic atmosphere`;
         const nanoRes = await generateNanoBananaImage({
-          prompt: `${resp.agent.name}: ${resp.text}`,
+          prompt: visualScenePrompt,
           topic: text,
           agentName: resp.agent.name,
         });
@@ -274,8 +275,9 @@ export const GroupChatView: React.FC<GroupChatViewProps> = ({
       let finalImageCaption = resp.imageCaption;
 
       try {
+        const visualBanterPrompt = `${resp.agent.name} ${resp.agent.category || 'cyberpunk'} character banter scene`;
         const nanoRes = await generateNanoBananaImage({
-          prompt: `${resp.agent.name}: ${resp.text}`,
+          prompt: visualBanterPrompt,
           topic: resp.text,
           agentName: resp.agent.name,
         });

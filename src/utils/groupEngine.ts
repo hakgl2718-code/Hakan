@@ -346,15 +346,15 @@ export function generateLocalGroupResponses(
     if (isFightOrProfanity) {
       hakanText = `Kardeşim ağzını topla! Bu grupta kimse kimseye laf edemez. Bu platformun kurucusu Hakan'ım ben! Terbiye takın, benim masamda racon kesilmez! ⚡🔥`;
     } else if (/futbol|derbi|galatasaray|fenerbahçe|fener|cimbom|maç|stadyum|bjk|beşiktaş/i.test(lowerText)) {
-      hakanText = `"${cleanSnippet}" hususunda derbi ve futbol tahlilin dikkat çekici. Sahadaki rekabet ne olursa olsun gruptaki kaliteyi ve seviyeyi bozmayız. ⚽⚡`;
+      hakanText = `Futbol ve derbi tahliliniz oldukça sıcak. Sahadaki rekabet ne olursa olsun gruptaki seviyeyi ve kaliteyi koruruz. ⚽⚡`;
     } else if (/sosyal medya|tiktok|twitter|instagram|gıybet|trend|linç|caps|magazin/i.test(lowerText)) {
-      hakanText = `Sosyal medya gündemi tam dediğin gibi alev almış durumda. XASİL platformunda bu trendleri yakından izliyoruz. ⚡`;
+      hakanText = `Sosyal medya gündemi tam dediğiniz gibi alev almış durumda. XASİL platformunda bu trendleri yakından izliyoruz. ⚡`;
     } else if (/yazılım|kod|ai|yapay zeka|sistem|tasarım|site|uygulama|bug|hata/i.test(lowerText)) {
-      hakanText = `Teknoloji ve sistem tarafındaki bu konuyu doğrudan takibe aldım. XASİL mimarisinde çözümümüz hazır, net konuşuyorum. 💻⚡`;
+      hakanText = `Teknoloji ve sistem tarafındaki konuyu doğrudan takibe aldım. XASİL mimarisinde çözümümüz hazır, net konuşuyorum. 💻⚡`;
     } else if (/selam|merhaba|sa|naber|nasılsın|günaydın|iyi akşamlar/i.test(lowerText)) {
       hakanText = `Aleykum selam kardeşim, hoş geldin gruba! Muhabbet tam gaz devam ediyor, nasıl yardımcı olabilirim? ⚡`;
     } else {
-      hakanText = `"${cleanSnippet}" lafını doğrudan okudum. Kararlı ve net konuşuyorum; belirttiğin bu meselede duruşumuz bellidir. ⚡`;
+      hakanText = `Mesajınız net, doğrudan konunun özüne odaklanalım. Kararlı ve net konuşuyorum; bu meselede duruşumuz bellidir. ⚡`;
     }
 
     const a2 = pickRandomAgent([hakanAgent.id]);
@@ -414,7 +414,7 @@ export function generateLocalGroupResponses(
   const p1 = pickAgentPhotoOrWhatsApp(a1, a2, 'general', wantsPhoto);
   responses.push({
     agent: a1,
-    text: `"${cleanSnippet}" konusunu grupta gördüm, tam yerinde bir mesaj! Doğrudan konuşalım. 🔥`,
+    text: `Konuyu grupta gördüm, tam yerinde bir mesaj! Doğrudan konuşalım. 🔥`,
     ...p1,
   });
 
