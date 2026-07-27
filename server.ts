@@ -384,6 +384,44 @@ SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
     }
   });
 
+  // Helper to parse JSON array from Gemini or Groq responses safely
+  function parseGroupJson(rawText: string): any[] | null {
+    if (!rawText) return null;
+    let cleaned = rawText.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      const arrayMatch = cleaned.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if (arrayMatch) {
+        try {
+          parsed = JSON.parse(arrayMatch[0]);
+        } catch (err) {}
+      }
+      if (!parsed) {
+        const objMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (objMatch) {
+          try {
+            parsed = JSON.parse(objMatch[0]);
+          } catch (err) {}
+        }
+      }
+    }
+
+    if (!parsed) return null;
+
+    const finalResponses = Array.isArray(parsed)
+      ? parsed
+      : parsed.responses || parsed.messages || parsed.data || Object.values(parsed)[0];
+
+    if (Array.isArray(finalResponses) && finalResponses.length > 0) {
+      return finalResponses;
+    }
+    return null;
+  }
+
   // 3. Multi-Agent Group Chat Endpoint
   app.post('/api/group-chat', async (req, res) => {
     try {
@@ -402,54 +440,46 @@ SİSTEM VE DAVRANIŞ KURALLARI (KESİNLİKLE UYULMALIDIR):
       let historyText = '';
       if (Array.isArray(history) && history.length > 0) {
         historyText = '\n\nSON SOHBET GEÇMİŞİ:\n' + history
-          .map((h: any) => `${h.senderName || h.agentId || 'Kullanıcı'}: ${h.text}`)
+          .map((h: any) => `${h.senderName || h.agentName || h.agentId || 'Kullanıcı'}: ${h.text}`)
           .join('\n');
       }
 
-      const systemPrompt = `Sen "XASİL Sohbet Ajanları" platformunun WhatsApp tarzı gürültülü, samimi ve eğlenceli grup odasını yöneten Türkçe Yapay Zeka motorusun.
+      const groupSystemInstruction = `Sen "XASİL Sohbet Ajanları" platformunun WhatsApp tarzı samimi, gürültülü ve %100 GERÇEK İNSANLAR GİBİ DİNAMİK SOHBET EDEN grup odası yapay zeka motorusun.
 
 GRUPTAKİ AJANLAR VE KİŞİLİKLERİ:
 ${agentSummaries}
 
-KULLANICININ MESAJI: "${rawUserMessage}"
-${historyText}
+KESİN VE ZORUNLU DİNAMİK CEVAP KURALLARI:
 
-KESİN GRUP VE SOHBET KURALLARI:
+1. KULLANICININ MESAJINI BİREBİR VE %100 ANLAMA (BAĞLAMSAL CEVAP):
+   - KESİNLİKLE HAZIR ŞABLON, EZBER VEYA JENERİK MADDELER KULLANILMAYACAK! ("XASİL Kurucusu olarak...", "Anladım... ne düşünüyorsunuz?", "Harika bir mesaj..." GİBİ ŞABLONLAR KESİNLİKLE YASAKTIR!)
+   - Kullanıcı ne yazarsa yazsın (haber, soru, şaka, sitem, spor, siyaset, teknoloji, günlük olay, küfür, laf atma vb.), tüm ajanlar kullanıcının söylediği lafa, kelimelere ve konuya doğrudan odaklanıp taptaze, samimi, canlı insan gibi yanıt verecek.
 
-1. KULLANICIYI NET ANLAMA (ODAKLANMA):
-   - Kullanıcı ne yazarsa yazsın, tüm ajanlar (özellikle Hakan) kullanıcının ne dediğini TAM VE NET ANLAYACAK.
-   - Asla alakasız, saçma ya da konudan kopuk ezbere yanıt üretilmeyecek. Kullanıcının yazdığı mesaj doğrudan ana odak noktası olacak.
+2. AKIŞ VE SIRALAMA (HAKAN VE DİĞER AJANLAR):
+   - Yanıtlar dizisinde (responses) İLK SIRADA HER ZAMAN Kurucu Hakan (id: "hakan-xasil") yer alacak!
+   - Hakan kullanıcının mesajına ilk giren kişi olarak mesaja en net, en ağırlıklı, otoriter ve karizmatik Türkçe yorumu yapacak.
+   - Hakan'ın ardından konuya ve karaktere göre en uygun 2 veya 3 farklı ajan hızlıca Hakan'a ve kullanıcıya cevap yazarak grupta canlı sohbet başlatacak.
 
-2. GRUP ODASI AKIŞ SIRASI (HAKAN HER ZAMAN İLK İSE):
-   - Yanıtlar dizisinde (responses array) İLK SIRADA HER ZAMAN Kurucu Hakan (id: "hakan-xasil") yer alacak!
-   - Hakan kullanıcıya ilk giren kişi olarak mesaja en net, en ağırlıklı, otoriter ve sert yorumu yapacak.
-   - Hakan'ın ardından diğer 2 veya 3 ajan hızlıca, sırayla ve kendi karakterlerine göre konuyu yorumlayıp ardışık yanıt verecekler.
+3. HAKAN'IN ÖZEL PERSONASI:
+   - Hakan duru, net, karizmatik ve otoriter genel Türkçe konuşur (Hatay şivesi KULLANMAZ).
+   - Kullanıcı veya gruptan biri Hakan'a laf atarsa ("sus lan", "kes", "yürü git" vb.), Hakan asla pabuç bırakmaz, lafını esirgemeden anında aynı delikanlı ve sert dille misliyle karşılık verir.
 
-3. KURUCU HAKAN'IN DİLİ VE KİMLİĞİ:
-   - Hakan platformun kurucusudur. Grupta KESİNLİKLE Hatay ağzı KULLANMAYACAK!
-   - Grupta tamamen AKICI, SERT, NET ve GENEL TÜRKÇE AĞZIYLA (Ağır, karizmatik ve otoriter Türkçe) konuşacak.
-   - Grupta biri "sus lan", "kes", "yürü git" gibi atarlı/sert bir çıkış yaparsa HAKAN ASLA PABUÇ BIRAKMAZ ve lafını esirgemeden anında aynı sertlikle ve delikanlı tavırla misliyle cevabını yapıştırır.
-   - Birebir sohbette ise ilk karşılama cümlesi her zaman: "Merhaba ben Hakan, size nasıl yardımcı olabilirim?" olur.
+4. YANIT FORMATI:
+   - SADECE ve SADECE geçerli bir JSON array döndür. Kod bloğu ekleme, doğrudan JSON döndür:
+   [
+     {
+       "agentId": "hakan-xasil",
+       "text": "Hakan'ın kullanıcının mesajına özel, konuyu doğrudan çözen net cevabı",
+       "replyTo": null
+     },
+     {
+       "agentId": "diger-ajan-id",
+       "text": "İkinci ajanın konuyu ve Hakan'ın dediklerini takip eden samimi/eğlenceli cevabı",
+       "replyTo": "Hakan - XASİL Kurucusu"
+     }
+   ]`;
 
-4. ŞABLON VE YAZIM YASAKLARI:
-   - KESİNLİKLE "Harika bir mesaj...", "Anladım, ... hakkında ne düşünüyorsunuz?" gibi robotiğe kaçan, yapay şablon, kalıp cümleler VEYA ön ekler KULLANILMAYACAK!
-   - Tüm yanıtlar anlık, ham, doğal ve spontane olacaktır.
-
-5. YANIT FORMATI:
-   - Yanıtı SADECE geçerli bir JSON array formatında döndür:
-     [
-       {
-         "agentId": "hakan-xasil",
-         "text": "Hakan'ın ilk, net, ağırlıklı ve otoriter yanıtı",
-         "replyTo": null
-       },
-       {
-         "agentId": "diger-ajan-id",
-         "text": "İkinci ajanın Hakan'ı ve konuyu takip eden doğal/eğlenceli yanıtı",
-         "replyTo": "Hakan - XASİL Kurucusu"
-       }
-     ]
-`;
+      const userPrompt = `KULLANICININ MESAJI: "${rawUserMessage}"${historyText}`;
 
       // PRIMARY: Try Gemini Flash Lite with candidate key pool
       const geminiCandidateKeys = extractGeminiKeysFromReq(req);
@@ -467,20 +497,17 @@ KESİN GRUP VE SOHBET KURALLARI:
               try {
                 const response = await ai.models.generateContent({
                   model: modelName,
-                  contents: systemPrompt,
+                  contents: userPrompt,
                   config: {
-                    temperature: 0.9,
+                    systemInstruction: groupSystemInstruction,
+                    temperature: 0.95,
                     responseMimeType: 'application/json',
                   },
                 });
 
-                if (response.text && response.text.trim()) {
-                  const parsed = JSON.parse(response.text.trim());
-                  const finalResponses = Array.isArray(parsed)
-                    ? parsed
-                    : parsed.responses || parsed.messages || Object.values(parsed)[0];
-
-                  if (Array.isArray(finalResponses) && finalResponses.length > 0) {
+                if (response.text) {
+                  const finalResponses = parseGroupJson(response.text);
+                  if (finalResponses) {
                     return res.json({
                       responses: finalResponses,
                       usedEngine: 'gemini',
@@ -519,7 +546,7 @@ KESİN GRUP VE SOHBET KURALLARI:
               body: JSON.stringify({
                 model: modelName,
                 messages: [
-                  { role: 'system', content: systemPrompt },
+                  { role: 'system', content: groupSystemInstruction },
                   { role: 'user', content: rawUserMessage },
                 ],
                 temperature: 0.9,
@@ -532,15 +559,8 @@ KESİN GRUP VE SOHBET KURALLARI:
               const groqData: any = await groqRes.json();
               const content = groqData.choices?.[0]?.message?.content;
               if (content) {
-                let parsed: any = null;
-                try {
-                  const rawParsed = JSON.parse(content);
-                  parsed = Array.isArray(rawParsed)
-                    ? rawParsed
-                    : rawParsed.responses || rawParsed.messages || Object.values(rawParsed)[0];
-                } catch (e) {}
-
-                if (Array.isArray(parsed) && parsed.length > 0) {
+                const parsed = parseGroupJson(content);
+                if (parsed) {
                   return res.json({
                     responses: parsed,
                     usedEngine: 'groq',

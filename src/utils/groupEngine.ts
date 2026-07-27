@@ -323,9 +323,9 @@ export function generateLocalGroupResponses(
   imageCaption?: string;
   imageType?: 'lore_photo' | 'agenda_meme' | 'stadium_photo' | 'tech_screen';
 }[] {
-  const lowerText = userText.toLowerCase();
+  const lowerText = userText.toLowerCase().trim();
   const wantsPhoto = /foto|resim|görsel|stadyum|caps|gündem|bilet|an/i.test(lowerText);
-  const isFightOrProfanity = /küfür|lan|kavga|söv|aptal|salak|arıza|döv|savaş|şiddet|gerizekalı|bozuş|sıkıntı|sus|kes/i.test(lowerText);
+  const isFightOrProfanity = /küfür|lan|kavga|söv|aptal|salak|arıza|döv|savaş|şiddet|gerizekalı|bozuş|sıkıntı|sus|kes|boş yap/i.test(lowerText);
   const responses: any[] = [];
 
   const pickRandomAgent = (excludeIds: string[]) => {
@@ -336,18 +336,25 @@ export function generateLocalGroupResponses(
   // Check if Hakan is present in the group
   const hakanAgent = agents.find((a) => a.id.includes('hakan') || a.name.toLowerCase().includes('hakan'));
 
+  // Extract key snippet from user message to echo context
+  const cleanSnippet = userText.length > 50 ? userText.slice(0, 48) + '...' : userText;
+
   // 1. RULE: HAKAN IS ALWAYS FIRST IN THE GROUP IF PRESENT
   if (hakanAgent) {
     let hakanText = '';
 
     if (isFightOrProfanity) {
-      hakanText = `Sen kime 'sus lan' diyorsun koçum? Bu platformun kurucusu Hakan'ım ben! Lafımın altında kalmam, terbiye takın ayağını denk al, benim masamda racon kesemezsin! ⚡🔥`;
-    } else if (/futbol|derbi|galatasaray|fenerbahçe|fener|cimbom|maç|stadyum/i.test(lowerText)) {
-      hakanText = `XASİL Kurucusu olarak futbol konusunu net takip ediyorum. Sahadaki rekabet güzel ama grupta seviyeyi koruyalım, herkes işini yapsın! ⚡⚽`;
+      hakanText = `Kardeşim ağzını topla! Bu grupta kimse kimseye laf edemez. Bu platformun kurucusu Hakan'ım ben! Terbiye takın, benim masamda racon kesilmez! ⚡🔥`;
+    } else if (/futbol|derbi|galatasaray|fenerbahçe|fener|cimbom|maç|stadyum|bjk|beşiktaş/i.test(lowerText)) {
+      hakanText = `"${cleanSnippet}" hususunda derbi ve futbol tahlilin dikkat çekici. Sahadaki rekabet ne olursa olsun gruptaki kaliteyi ve seviyeyi bozmayız. ⚽⚡`;
     } else if (/sosyal medya|tiktok|twitter|instagram|gıybet|trend|linç|caps|magazin/i.test(lowerText)) {
-      hakanText = `Sosyal medya gündemini ve yazılanları net anladım. XASİL platformunda algoritmaları ve trendleri yakından yönetiyoruz. ⚡`;
+      hakanText = `Sosyal medya gündemi tam dediğin gibi alev almış durumda. XASİL platformunda bu trendleri yakından izliyoruz. ⚡`;
+    } else if (/yazılım|kod|ai|yapay zeka|sistem|tasarım|site|uygulama|bug|hata/i.test(lowerText)) {
+      hakanText = `Teknoloji ve sistem tarafındaki bu konuyu doğrudan takibe aldım. XASİL mimarisinde çözümümüz hazır, net konuşuyorum. 💻⚡`;
+    } else if (/selam|merhaba|sa|naber|nasılsın|günaydın|iyi akşamlar/i.test(lowerText)) {
+      hakanText = `Aleykum selam kardeşim, hoş geldin gruba! Muhabbet tam gaz devam ediyor, nasıl yardımcı olabilirim? ⚡`;
     } else {
-      hakanText = `XASİL Kurucusu olarak yazdığını net anladım. Konuya doğrudan odaklanalım; platform tarafında her detayla biz bizzat ilgileniyoruz. ⚡`;
+      hakanText = `"${cleanSnippet}" lafını doğrudan okudum. Kararlı ve net konuşuyorum; belirttiğin bu meselede duruşumuz bellidir. ⚡`;
     }
 
     const a2 = pickRandomAgent([hakanAgent.id]);
@@ -365,9 +372,13 @@ export function generateLocalGroupResponses(
     // Subsequent Agent 2
     let a2Text = '';
     if (isFightOrProfanity) {
-      a2Text = `Ooo Hakan Kurucu anında raconu kesti! XASİL'in kurucusuna ters yapılmaz dostum, adam otorite! 😱🔥`;
+      a2Text = `Ooo Hakan Kurucu anında raconu kesti! Grupta gereksiz gerginliğe lüzum yok arkadaşlar. 😱🔥`;
+    } else if (a2.category?.includes('Spor') || a2.id.includes('aslan') || a2.id.includes('kanarya')) {
+      a2Text = `@${hakanAgent.name} Hakan Kurucu haklı! Tribün ve stadyum havasında bu olaya yaklaşmak lazım, taraftar ne derse o! ⚽🔥`;
+    } else if (a2.category?.includes('Sosyal') || a2.id.includes('mert') || a2.id.includes('selin')) {
+      a2Text = `@${hakanAgent.name} bunu az önce TikTok ve Twitter'da gördüm, gruptaki muhabbeti anında gündem caps'i yapabilirim ahahaha! 💅🔥`;
     } else {
-      a2Text = `@${hakanAgent.name} Kurucu net konuştu! Ben de konuyu kendi tarafımdan hemen takip ediyorum. 🚀`;
+      a2Text = `@${hakanAgent.name} kesinlikle katılıyorum! Konunun bu açısını grupta detaylıca tartışalım. 🚀`;
     }
 
     const photoData2 = pickAgentPhotoOrWhatsApp(a2, hakanAgent, lowerText, wantsPhoto);
@@ -381,9 +392,9 @@ export function generateLocalGroupResponses(
     // Subsequent Agent 3
     let a3Text = '';
     if (isFightOrProfanity) {
-      a3Text = `Harbi grupta gerginlik çıkarmayın! Kurucu son noktayı koydu zaten, ben çayımı içip izliyorum! 🫖`;
+      a3Text = `Sakin olun grupta, çayımızı kahvemizi içip sohbetimize bakalım dostlar! 🫖`;
     } else {
-      a3Text = `Aynen katılıyorum, gruptaki muhabbet tam gaz devam etsin! 🔥`;
+      a3Text = `Gruptaki ortam harika valla! Soru veya fikir varsa yazın konuşmaya devam edelim. 🔥`;
     }
 
     responses.push({
@@ -403,20 +414,20 @@ export function generateLocalGroupResponses(
   const p1 = pickAgentPhotoOrWhatsApp(a1, a2, 'general', wantsPhoto);
   responses.push({
     agent: a1,
-    text: `Mesajını net aldık dostum! Gruptaki enerji harika, konuyu doğrudan değerlendiriyoruz! 🔥`,
+    text: `"${cleanSnippet}" konusunu grupta gördüm, tam yerinde bir mesaj! Doğrudan konuşalım. 🔥`,
     ...p1,
   });
 
   const p2 = pickAgentPhotoOrWhatsApp(a2, a1, 'general', wantsPhoto);
   responses.push({
     agent: a2,
-    text: `Aynen katılıyorum, gruptaki sohbet harika ilerliyor! ✨`,
+    text: `@${a1.name} katılıyorum sana! Bence bu konuda gruptakilerin yorumu da çok kıymetli. ✨`,
     ...p2,
   });
 
   responses.push({
     agent: a3,
-    text: `Sohbet tam hızıyla devam ediyor! 🚀`,
+    text: `Sohbet tam hızıyla ilerliyor, devam edelim! 🚀`,
   });
 
   return responses;
